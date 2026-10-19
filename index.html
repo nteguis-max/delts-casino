@@ -1,0 +1,705 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Washed Delts Casino</title>
+<meta name="description" content="Gamble your FAAB. Roulette, blackjack, slots, dice and Plinko for the Washed Delts league.">
+<meta property="og:title" content="Washed Delts Casino">
+<meta property="og:description" content="Gamble your FAAB. Losses go to the FAAB Bank.">
+<meta name="theme-color" content="#0a1120">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: stadium scoreboard header, game tabs, one game stage, then house report + live feed. Single dark "night game" look by choice. */
+:root{
+  --bg:#0a1120; --surface:#111a2c; --surface-2:#18233a; --line:#26324c;
+  --fg:#e9eef7; --muted:#8a96ad; --turf:#2c9d66; --turf-ink:#06180f;
+  --amber:#ffb22e; --win:#4fdc8e; --loss:#f25c64; --pocket-red:#c4313b; --pocket-black:#1a2132;
+  --display:"Big Shoulders Display",Impact,"Arial Narrow",sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+img,canvas{max-width:100%}
+html{-webkit-text-size-adjust:100%}
+.board > *{min-width:0}
+.bal .who{overflow-wrap:anywhere}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.02em;margin:0;line-height:1;text-wrap:balance}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600}
+
+/* scoreboard */
+.board{margin-top:16px;background:linear-gradient(180deg,#0f1a2f,#0b1426);border:1px solid var(--line);border-radius:6px;padding:16px;display:grid;grid-template-columns:1fr auto;gap:12px 20px;align-items:end;position:relative;overflow:hidden}
+.board::after{content:"";position:absolute;inset:auto 0 0 0;height:3px;background:repeating-linear-gradient(90deg,var(--turf) 0 18px,transparent 18px 24px);opacity:.7}
+.brand h1{font-size:clamp(30px,8vw,46px);font-weight:900}
+.brand h1 span{color:var(--amber)}
+.brand p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.bal{text-align:right}
+.bal .big{font-family:var(--mono);font-weight:700;font-size:clamp(28px,7vw,40px);color:var(--amber);text-shadow:0 0 18px rgba(255,178,46,.25);line-height:1.05}
+.bal .who{font-size:13px;color:var(--muted)}
+.meter{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:12px;color:var(--muted)}
+.meter .bar{flex:1 1 160px;height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;min-width:120px}
+.meter .bar i{display:block;height:100%;background:var(--amber);width:0}
+.closed-banner{background:#2a1418;border:1px solid #5a2129;color:#ffb3b8;padding:10px 12px;border-radius:6px;font-size:14px}
+
+/* tabs */
+.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.tabs button{background:none;border:0;padding:10px 12px 9px;font-family:var(--display);font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--turf)}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.stage .rules{font-size:12.5px;color:var(--muted)}
+
+/* bet controls */
+.betrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.betrow input[type=number]{width:120px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--fg);padding:9px 10px;font-family:var(--mono);font-size:16px}
+.chip{background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:8px 10px;font-size:13px;font-weight:600}
+.chip:hover{border-color:var(--muted)}
+.go{background:var(--turf);color:var(--turf-ink);border:0;border-radius:4px;padding:11px 20px;font-family:var(--display);font-weight:900;font-size:20px;text-transform:uppercase;letter-spacing:.04em}
+.go:disabled{opacity:.4;cursor:not-allowed}
+.go.alt{background:var(--surface-2);color:var(--fg);border:1px solid var(--line)}
+.result{min-height:28px;font-family:var(--display);font-size:24px;font-weight:800;text-transform:uppercase;letter-spacing:.02em}
+.result.win{color:var(--win)} .result.loss{color:var(--loss)} .result.push{color:var(--amber)}
+
+/* roulette */
+.rl{display:grid;grid-template-columns:minmax(0,260px) 1fr;gap:16px;align-items:start}
+@media (max-width:620px){.rl{grid-template-columns:1fr}}
+.wheelbox{position:relative;width:100%;max-width:260px;aspect-ratio:1;margin:0 auto}
+.wheelbox canvas{width:100%;height:100%;display:block}
+.pointer{position:absolute;left:50%;top:-4px;transform:translateX(-50%);width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-top:16px solid var(--amber)}
+.picks{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.picks button{background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:9px 4px;font-weight:600;font-size:13px}
+.picks button.red{background:var(--pocket-red);border-color:var(--pocket-red)}
+.picks button.blk{background:var(--pocket-black)}
+.picks button[aria-pressed="true"]{outline:2px solid var(--amber);outline-offset:1px}
+.straight{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
+.straight input{width:70px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--fg);padding:8px;font-family:var(--mono)}
+
+/* blackjack */
+.table{background:radial-gradient(ellipse at 50% 0%,#164a33,#0d2b1e 70%);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:14px;border:1px solid #1f5a3e}
+.hand{display:flex;flex-direction:column;gap:6px}
+.hand .label{color:#9ec9b1}
+.cards{display:flex;gap:6px;flex-wrap:wrap;min-height:78px}
+.card{width:52px;height:74px;background:#f6f3ea;color:#111;border-radius:5px;display:flex;flex-direction:column;justify-content:space-between;padding:4px 6px;font-weight:700;font-size:17px;box-shadow:0 2px 6px rgba(0,0,0,.35);animation:deal .25s ease-out}
+.card.r{color:#b3202b}
+.card .s{align-self:flex-end;font-size:20px}
+.card.back{background:repeating-linear-gradient(45deg,#24314d 0 6px,#1a2440 6px 12px);border:2px solid #f6f3ea}
+@keyframes deal{from{transform:translateY(-10px);opacity:0}to{transform:none;opacity:1}}
+
+/* slots */
+.reels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:420px}
+.reel{background:#05090f;border:1px solid var(--line);border-radius:4px;height:92px;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:900;font-size:40px;color:var(--amber);text-shadow:0 0 14px rgba(255,178,46,.35)}
+.reel.spin{color:var(--muted);filter:blur(.6px)}
+.paytable{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:4px 16px;font-size:13px}
+.paytable div{display:flex;justify-content:space-between;border-bottom:1px dotted var(--line);padding:3px 0}
+
+/* dice */
+.dice-read{display:flex;flex-wrap:wrap;gap:8px 24px}
+.dice-read div{display:flex;flex-direction:column}
+.dice-read b{font-family:var(--mono);font-size:20px}
+input[type=range]{width:100%;accent-color:var(--turf)}
+.track{position:relative;height:30px;background:linear-gradient(90deg,var(--win) 0 var(--t,50%),var(--loss) var(--t,50%) 100%);border-radius:4px;opacity:.85}
+.track .mark{position:absolute;top:-6px;bottom:-6px;width:3px;background:var(--fg);transform:translateX(-50%);transition:left .5s cubic-bezier(.2,.8,.2,1)}
+.rollnum{font-family:var(--mono);font-size:44px;font-weight:700;line-height:1}
+
+/* plinko */
+.plinkobox{width:100%;max-width:520px;margin:0 auto}
+.plinkobox canvas{width:100%;display:block}
+
+/* report */
+.cols{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px}
+@media (max-width:700px){.cols{grid-template-columns:1fr}}
+.panel{display:flex;flex-direction:column;gap:10px;min-width:0}
+.panel h2{font-size:24px;font-weight:800}
+.bank{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.bank b{font-family:var(--mono);font-size:26px;color:var(--amber)}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:6px 6px;border-bottom:1px solid var(--line)}
+td{padding:7px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+tr.me td{background:rgba(44,157,102,.09)}
+.pos{color:var(--win)} .neg{color:var(--loss)}
+.tname{font-weight:600}
+.tname small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+.feed{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.feed li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.feed li .d{color:var(--muted);font-size:12px;grid-column:1/-1}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+
+/* picker */
+.picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.picker button{text-align:left;background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.picker button:disabled{opacity:.45;cursor:not-allowed}
+.picker button small{color:var(--muted)}
+
+/* commish */
+details.commish{border:1px dashed var(--line);border-radius:6px;padding:12px 14px}
+details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px;font-weight:800;text-transform:uppercase}
+.commish .grid{display:flex;flex-wrap:wrap;gap:12px;align-items:end;margin:12px 0}
+.commish label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.commish input{background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--fg);padding:7px 8px;font-family:var(--mono);width:110px}
+.commish td input{width:90px}
+.small{font-size:12.5px;color:var(--muted)}
+.linkbtn{background:none;border:0;color:var(--amber);text-decoration:underline;padding:0;font-size:12.5px}
+
+.pinform{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px}
+.pinform input{width:120px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--fg);padding:10px;font-family:var(--mono);font-size:18px;letter-spacing:.2em}
+.pinform .label{width:100%}
+.picker button.sel{border-color:var(--amber)}
+.toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--surface-2);border:1px solid var(--line);padding:10px 14px;border-radius:6px;font-size:14px;max-width:min(92vw,460px);z-index:20}
+@media (prefers-reduced-motion:reduce){.card{animation:none}.track .mark{transition:none}}
+</style>
+</head><body>
+<div class="wrap">
+  <header class="board">
+    <div class="brand">
+      <h1>Washed Delts <span>Casino</span></h1>
+      <p>House currency is FAAB. Lost bets go to the FAAB Bank.</p>
+    </div>
+    <div class="bal">
+      <div class="label">Your FAAB <button class="linkbtn" id="logout" hidden>switch team</button></div>
+      <div class="big" id="balBig">$—</div>
+      <div class="who" id="whoLine">Pick your team below</div>
+    </div>
+    <div class="meter" id="meter" hidden>
+      <span>Wagered today <b class="num" id="dayW">$0</b> of <span class="num" id="dayL">$0</span></span>
+      <div class="bar"><i id="dayBar"></i></div>
+      <span>Max bet <b class="num" id="maxB">$0</b></span>
+    </div>
+  </header>
+
+  <div id="notice" class="closed-banner" hidden></div>
+
+  <section id="pickerSec" class="panel" hidden>
+    <h2>Which team is yours?</h2>
+    <p class="small">First time: pick your team and set a 4-digit PIN. After that, your PIN is how you get back in on any phone. If you forget it, the commish can reset it.</p>
+    <div class="picker" id="picker"></div>
+    <form id="pinForm" class="pinform" hidden>
+      <div class="label" id="pinTitle">Enter your PIN</div>
+      <input id="pinIn" inputmode="numeric" pattern="\d{4}" maxlength="4" autocomplete="off" placeholder="4 digits" aria-label="4-digit PIN">
+      <input id="pinIn2" inputmode="numeric" pattern="\d{4}" maxlength="4" autocomplete="off" placeholder="Repeat PIN" aria-label="Repeat PIN" hidden>
+      <button class="go" id="pinGo" type="submit">Enter</button>
+      <button class="chip" id="pinBack" type="button">Back</button>
+      <p class="small" id="pinHelp"></p>
+    </form>
+  </section>
+
+  <section id="gameSec" hidden>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-g="roulette" aria-selected="true">Roulette</button>
+      <button role="tab" data-g="blackjack" aria-selected="false">Blackjack</button>
+      <button role="tab" data-g="slots" aria-selected="false">Slots</button>
+      <button role="tab" data-g="dice" aria-selected="false">Dice</button>
+      <button role="tab" data-g="plinko" aria-selected="false">Plinko</button>
+    </nav>
+
+    <!-- ROULETTE -->
+    <div class="stage" data-game="roulette">
+      <div class="rl">
+        <div class="wheelbox"><canvas id="wheel" width="520" height="520"></canvas><div class="pointer"></div></div>
+        <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+          <div class="picks" id="rlPicks">
+            <button class="red" data-b="red">Red</button>
+            <button class="blk" data-b="black">Black</button>
+            <button data-b="odd">Odd</button>
+            <button data-b="even">Even</button>
+            <button data-b="low">1 to 18</button>
+            <button data-b="high">19 to 36</button>
+            <button data-b="d1">1st 12</button>
+            <button data-b="d2">2nd 12</button>
+            <button data-b="d3">3rd 12</button>
+          </div>
+          <div class="straight"><button class="chip" data-b="num" id="rlNumBtn">Single number</button><input id="rlNum" type="number" min="0" max="36" value="17" aria-label="Number 0 to 36"></div>
+          <div class="betrow" data-bet="roulette"></div>
+          <div class="result" id="rlRes"></div>
+        </div>
+      </div>
+      <div class="rules">Closed every Monday 8 PM to Tuesday 6 AM Eastern while MNF plays and waivers run. Single zero wheel. Red, black, odd, even and halves pay 1 to 1. Dozens pay 2 to 1. A single number pays 35 to 1. Zero loses every outside bet.</div>
+    </div>
+
+    <!-- BLACKJACK -->
+    <div class="stage" data-game="blackjack" hidden>
+      <div class="table">
+        <div class="hand"><span class="label">Dealer <span id="dTot"></span></span><div class="cards" id="dCards"></div></div>
+        <div class="hand"><span class="label">You <span id="pTot"></span></span><div class="cards" id="pCards"></div></div>
+      </div>
+      <div class="betrow" data-bet="blackjack"></div>
+      <div class="betrow" id="bjActs" hidden>
+        <button class="go" id="bjHit">Hit</button>
+        <button class="go alt" id="bjStand">Stand</button>
+        <button class="go alt" id="bjDouble">Double</button>
+      </div>
+      <div class="result" id="bjRes"></div>
+      <div class="rules">Blackjack pays 3 to 2. Dealer stands on all 17s. Double on your first two cards. No splits. Your hand is saved on the server, so if you close the page mid-hand you can pick it back up.</div>
+    </div>
+
+    <!-- SLOTS -->
+    <div class="stage" data-game="slots" hidden>
+      <div class="reels"><div class="reel" id="r0">TD</div><div class="reel" id="r1">FG</div><div class="reel" id="r2">PAT</div></div>
+      <div class="betrow" data-bet="slots"></div>
+      <div class="result" id="slRes"></div>
+      <div>
+        <div class="label" style="margin-bottom:4px">Pay table (total return per $1)</div>
+        <div class="paytable">
+          <div><span>TD TD TD</span><b class="num">150x</b></div>
+          <div><span>2PT 2PT 2PT</span><b class="num">40x</b></div>
+          <div><span>FG FG FG</span><b class="num">16x</b></div>
+          <div><span>PAT PAT PAT</span><b class="num">8x</b></div>
+          <div><span>SACK SACK SACK</span><b class="num">5x</b></div>
+          <div><span>Any two TD</span><b class="num">8x</b></div>
+          <div><span>Any one TD</span><b class="num">1.5x</b></div>
+        </div>
+      </div>
+      <div class="rules">Returns about 96.5% over the long run.</div>
+    </div>
+
+    <!-- DICE -->
+    <div class="stage" data-game="dice" hidden>
+      <div class="rollnum" id="dRoll">50.00</div>
+      <div class="track" id="dTrack"><div class="mark" id="dMark" style="left:50%"></div></div>
+      <label class="label" for="dTarget">Roll under</label>
+      <input type="range" id="dTarget" min="2" max="95" value="50">
+      <div class="dice-read">
+        <div><span class="label">Roll under</span><b id="dUnder">50</b></div>
+        <div><span class="label">Win chance</span><b id="dChance">50%</b></div>
+        <div><span class="label">Payout</span><b id="dMult">1.98x</b></div>
+      </div>
+      <div class="betrow" data-bet="dice"></div>
+      <div class="result" id="diRes"></div>
+      <div class="rules">Rolls 0.00 to 99.99. Win if the roll lands under your number. Payout is 99 divided by your number, so the house keeps 1%.</div>
+    </div>
+
+    <!-- PLINKO -->
+    <div class="stage" data-game="plinko" hidden>
+      <div class="plinkobox"><canvas id="plinko" width="1040" height="760"></canvas></div>
+      <div class="betrow" data-bet="plinko"></div>
+      <div class="result" id="plRes"></div>
+      <div class="rules">12 rows. Edges pay 25x, the middle pays 0.4x. Returns about 97.8% over the long run.</div>
+    </div>
+  </section>
+
+  <section class="cols">
+    <div class="panel">
+      <h2>House report</h2>
+      <div class="bank"><span class="label">FAAB Bank</span><b id="bankAll">$0</b><span class="small" id="bankUnset"></span></div>
+      <div class="scroll"><table>
+        <thead><tr><th>Team</th><th class="r">Casino net</th><th class="r">FAAB now</th></tr></thead>
+        <tbody id="lb"><tr><td colspan="3" class="empty">Loading the league…</td></tr></tbody>
+      </table></div>
+      <p class="small">FAAB now is your Sleeper balance plus casino results the commish hasn't settled into Sleeper yet. Every roll, spin and card is drawn on the server, not on your phone.</p>
+    </div>
+    <div class="panel">
+      <h2>Live action</h2>
+      <ul class="feed" id="feed"><li class="empty">No bets yet. Someone has to go first.</li></ul>
+    </div>
+  </section>
+
+  <details class="commish" id="commish">
+    <summary>Commish desk</summary>
+    <form id="adminLogin" class="betrow" style="margin-top:12px">
+      <input id="adminPin" type="password" inputmode="numeric" maxlength="12" placeholder="Commish PIN" aria-label="Commish PIN" style="width:140px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--fg);padding:9px 10px;font-family:var(--mono)">
+      <button class="go alt" type="submit" style="font-size:16px;padding:8px 14px">Unlock</button>
+    </form>
+    <div id="adminBody" hidden>
+    <div class="grid">
+      <label>Max bet<input id="cMax" type="number" min="1"></label>
+      <label>Daily wager limit<input id="cDay" type="number" min="1"></label>
+      <label>Casino<select id="cOpen" style="background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:7px"><option value="1">Open</option><option value="0">Closed</option></select></label>
+      <button class="go alt" id="cSave" style="font-size:16px;padding:8px 14px">Save rules</button>
+    </div>
+    <p class="small">To settle: set each team's FAAB in Sleeper (Commissioner tools, edit FAAB budgets) to the "Set Sleeper to" number, then press Mark settled. After waivers run, change a team's Sleeper base here so it matches Sleeper.</p>
+    <div class="scroll"><table>
+      <thead><tr><th>Team</th><th class="r">Sleeper base</th><th class="r">Unsettled</th><th class="r">Set Sleeper to</th><th>PIN</th></tr></thead>
+      <tbody id="cTable"></tbody>
+    </table></div>
+    <div class="betrow" style="margin-top:12px">
+      <button class="go alt" id="cBases" style="font-size:16px;padding:8px 14px">Save Sleeper bases</button>
+      <button class="go" id="cSettle" style="font-size:16px;padding:8px 14px">Mark settled</button>
+      <span id="cConfirm" class="small" hidden>Press again to confirm. This clears every unsettled amount.</span>
+    </div>
+    </div>
+  </details>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+const SUPABASE_URL = "https://cuxqhflbcyafnbbcrpxo.supabase.co";
+const SUPABASE_KEY = "sb_publishable_iwaCPYbcWRUUWUkaEpb8bg_Ffz-Z00X";
+
+const $ = id => document.getElementById(id);
+const fmt = n => (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString("en-US");
+const sfmt = n => (n > 0 ? "+" : "") + fmt(n);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const reduced = () => matchMedia("(prefers-reduced-motion:reduce)").matches;
+let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3600); }
+const GAME_NAMES = {roulette:"Roulette",blackjack:"Blackjack",slots:"Slots",dice:"Dice",plinko:"Plinko"};
+
+/* ---------- server ---------- */
+const H = {apikey: SUPABASE_KEY, "Content-Type": "application/json"};
+if(SUPABASE_KEY.startsWith("eyJ")) H.Authorization = "Bearer " + SUPABASE_KEY;  // legacy anon keys; new publishable keys go in apikey only
+async function rpc(fn, args){
+  let r;
+  try { r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {method:"POST", headers:H, body:JSON.stringify(args)}); }
+  catch(e){ throw new Error("Can't reach the casino. Check your connection."); }
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok) throw new Error(j.message || "Something went wrong.");
+  if(j && j.error) throw new Error(j.error);
+  return j;
+}
+async function view(name, q=""){
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${name}?select=*${q}`, {headers:H});
+  if(!r.ok) throw new Error("load failed");
+  return r.json();
+}
+
+/* ---------- state ---------- */
+let cfg = null, teams = [], feed = [];
+let auth = null;                   // {team, pin}
+let balance = null;                // my server balance
+let pendingReveal = 0;             // winnings already credited but not yet shown
+let busy = false;
+try { auth = JSON.parse(localStorage.getItem("delts-auth") || "null"); } catch(e){}
+const myTeam = () => teams.find(t => t.id === auth?.team);
+const shownBal = () => (balance ?? myTeam()?.available ?? 0) - pendingReveal;
+const dayWagered = () => myTeam()?.day_wagered || 0;
+const isLive = () => cfg && cfg.open && !cfg.blackout;
+
+async function refresh(){
+  try {
+    const [c, t, f] = await Promise.all([view("v_config"), view("v_teams","&order=id"), view("v_feed")]);
+    cfg = c[0] || null; teams = t; feed = f;
+    if(auth && pendingReveal === 0 && !busy){ const m = myTeam(); if(m) balance = m.available; }
+    $("notice").hidden = true;
+  } catch(e){ showNotice("Can't reach the casino right now. Retrying…"); }
+  render();
+}
+function showNotice(msg){ const n=$("notice"); n.textContent=msg; n.hidden=false; }
+
+/* ---------- login ---------- */
+let pickTeam = null;
+$("picker").addEventListener("click", e => {
+  const b = e.target.closest("button[data-r]"); if(!b) return;
+  pickTeam = teams.find(t => t.id === +b.dataset.r);
+  document.querySelectorAll("#picker button").forEach(x => x.classList.toggle("sel", x === b));
+  const fresh = !pickTeam.claimed;
+  $("pinForm").hidden = false; $("pinIn2").hidden = !fresh; $("pinIn").value = ""; $("pinIn2").value = "";
+  $("pinTitle").textContent = fresh ? `Set a PIN for ${pickTeam.name}` : `PIN for ${pickTeam.name}`;
+  $("pinGo").textContent = fresh ? "Claim team" : "Enter";
+  $("pinHelp").textContent = fresh ? "Pick 4 digits you'll remember. Don't use your phone passcode." : "Forgot it? Text the commish to reset it.";
+  $("pinIn").focus();
+});
+$("pinBack").addEventListener("click", () => { $("pinForm").hidden = true; pickTeam = null; render(); });
+$("pinForm").addEventListener("submit", async e => {
+  e.preventDefault(); if(!pickTeam) return;
+  const pin = $("pinIn").value.trim();
+  if(!/^\d{4}$/.test(pin)) return toast("PIN must be 4 digits.");
+  try {
+    if(!pickTeam.claimed){
+      if(pin !== $("pinIn2").value.trim()) return toast("Those PINs don't match.");
+      await rpc("claim_team", {p_team: pickTeam.id, p_pin: pin});
+    }
+    const r = await rpc("login", {p_team: pickTeam.id, p_pin: pin});
+    auth = {team: pickTeam.id, pin}; balance = r.balance;
+    try { localStorage.setItem("delts-auth", JSON.stringify(auth)); } catch(e){}
+    $("pinForm").hidden = true; pickTeam = null;
+    await refresh(); loadBj();
+  } catch(err){ toast(err.message); }
+});
+$("logout").addEventListener("click", () => { auth = null; balance = null; try{ localStorage.removeItem("delts-auth"); }catch(e){} render(); });
+
+/* ---------- bet controls ---------- */
+const betVals = {roulette:100, blackjack:100, slots:50, dice:100, plinko:50};
+const goLabels = {roulette:"Spin", blackjack:"Deal", slots:"Spin", dice:"Roll", plinko:"Drop"};
+document.querySelectorAll("[data-bet]").forEach(row => {
+  const g = row.dataset.bet;
+  row.innerHTML = `<input type="number" id="bet-${g}" min="1" step="1" inputmode="numeric" value="${betVals[g]}" aria-label="Bet amount">
+    <button class="chip" data-m="half">½</button><button class="chip" data-m="dbl">2x</button><button class="chip" data-m="max">Max</button>
+    <button class="go" id="go-${g}">${goLabels[g]}</button>`;
+  const inp = row.querySelector("input");
+  row.addEventListener("click", e => {
+    const m = e.target.dataset.m; if(!m) return;
+    let v = parseInt(inp.value) || 0;
+    if(m === "half") v = Math.max(1, Math.floor(v/2));
+    if(m === "dbl") v = v * 2;
+    if(m === "max") v = Math.max(1, Math.min(cfg?.max_bet || v, Math.floor(shownBal()), (cfg?.daily_limit || 0) - dayWagered()));
+    inp.value = v;
+  });
+});
+const getBet = g => parseInt($("bet-" + g).value);
+function preCheck(bet){
+  if(!auth) return "Pick your team first.";
+  if(!cfg?.open) return "The casino is closed right now.";
+  if(cfg.blackout) return "Betting is closed from 8 PM Monday until waivers clear at 6 AM Tuesday (Eastern).";
+  if(!Number.isInteger(bet) || bet < 1) return "Enter a whole-dollar bet of at least $1.";
+  return null;  // the server checks the rest
+}
+function creds(){ return {p_team: auth.team, p_pin: auth.pin}; }
+function onAuthError(err){
+  if(/Wrong PIN|hasn't been claimed/.test(err.message)){ auth = null; try{ localStorage.removeItem("delts-auth"); }catch(e){} render(); }
+  toast(err.message);
+}
+function showRes(el, b, p, extra){
+  const prof = p - b; el.className = "result " + (prof > 0 ? "win" : prof < 0 ? "loss" : "push");
+  el.textContent = (prof > 0 ? "Won " + fmt(prof) : prof < 0 ? "Lost " + fmt(b - p) : "Push") + (extra ? " · " + extra : "");
+}
+
+/* ---------- tabs ---------- */
+$("tabs").addEventListener("click", e => {
+  const g = e.target.dataset.g; if(!g) return;
+  document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.g === g));
+  document.querySelectorAll("[data-game]").forEach(s => s.hidden = s.dataset.game !== g);
+  try{ localStorage.setItem("delts-tab", g); }catch(e){}
+  if(g === "plinko") drawPlinko();
+});
+try{ const t = localStorage.getItem("delts-tab"); if(t) document.querySelector(`#tabs [data-g="${t}"]`)?.click(); }catch(e){}
+
+/* ---------- ROULETTE ---------- */
+const ORDER=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
+const REDS=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
+const SEG=2*Math.PI/37; let wheelRot=0, spinning=false, rlBet="red";
+const wc=$("wheel"), wx=wc.getContext("2d");
+function drawWheel(){
+  const W=wc.width, c=W/2, R=c-6; wx.clearRect(0,0,W,W);
+  wx.save(); wx.translate(c,c); wx.rotate(wheelRot);
+  ORDER.forEach((n,i) => {
+    const a0=-Math.PI/2+i*SEG-SEG/2;
+    wx.beginPath(); wx.moveTo(0,0); wx.arc(0,0,R,a0,a0+SEG); wx.closePath();
+    wx.fillStyle = n===0 ? "#2c9d66" : REDS.has(n) ? "#c4313b" : "#1a2132"; wx.fill();
+    wx.strokeStyle="#0a1120"; wx.lineWidth=2; wx.stroke();
+    wx.save(); wx.rotate(a0+SEG/2+Math.PI/2); wx.fillStyle="#f2f4f8"; wx.font="700 22px 'JetBrains Mono', monospace"; wx.textAlign="center"; wx.fillText(String(n),0,-R+30); wx.restore();
+  });
+  wx.beginPath(); wx.arc(0,0,R*0.58,0,2*Math.PI); wx.fillStyle="#111a2c"; wx.fill();
+  wx.strokeStyle="#ffb22e"; wx.lineWidth=3; wx.stroke();
+  wx.restore();
+}
+drawWheel();
+$("rlPicks").addEventListener("click", e => { const b=e.target.dataset.b; if(b){ rlBet=b; markRl(); }});
+$("rlNumBtn").addEventListener("click", () => { rlBet="num"; markRl(); });
+$("rlNum").addEventListener("focus", () => { rlBet="num"; markRl(); });
+function markRl(){ document.querySelectorAll("#rlPicks button, #rlNumBtn").forEach(b => b.setAttribute("aria-pressed", b.dataset.b===rlBet)); }
+markRl();
+$("go-roulette").addEventListener("click", async () => {
+  if(spinning) return;
+  const bet = getBet("roulette"); const err = preCheck(bet); if(err) return toast(err);
+  const num = parseInt($("rlNum").value);
+  spinning = true; busy = true; $("rlRes").className = "result"; $("rlRes").textContent = "Spinning…";
+  let r;
+  try { r = await rpc("play_roulette", {...creds(), p_bet: bet, p_pick: rlBet, p_num: rlBet === "num" ? num : null}); }
+  catch(e){ spinning = false; busy = false; $("rlRes").textContent = ""; return onAuthError(e); }
+  pendingReveal += r.payout; balance = r.balance; render();
+  const idx = ORDER.indexOf(r.n), start = wheelRot, target = -idx*SEG;
+  const extra = ((target - start) % (2*Math.PI) + 2*Math.PI) % (2*Math.PI);
+  const end = start + 2*Math.PI*5 + extra, dur = reduced() ? 300 : 3600, t0 = performance.now();
+  (function step(t){ const k = Math.min(1,(t-t0)/dur), e = 1 - Math.pow(1-k,3); wheelRot = start + (end-start)*e; drawWheel();
+    if(k < 1) return requestAnimationFrame(step);
+    wheelRot = end % (2*Math.PI); spinning = false; busy = false; pendingReveal -= r.payout;
+    showRes($("rlRes"), bet, r.payout, "landed " + r.n + (r.n === 0 ? "" : REDS.has(r.n) ? " red" : " black")); refresh();
+  })(t0);
+});
+
+/* ---------- BLACKJACK ---------- */
+let bj = {phase:"idle"};
+function cardHTML(c){
+  if(c === "??") return `<div class="card back" aria-label="Hidden card"></div>`;
+  const s = c.slice(-1), r = c.slice(0,-1), red = s==="♥"||s==="♦";
+  return `<div class="card${red?" r":""}" aria-label="${r}${s}"><span>${r}</span><span class="s">${s}</span></div>`;
+}
+function bjRender(){
+  $("pCards").innerHTML = (bj.player||[]).map(cardHTML).join("");
+  $("dCards").innerHTML = (bj.dealer||[]).map(cardHTML).join("");
+  $("pTot").textContent = bj.player ? "· " + bj.playerTotal : "";
+  $("dTot").textContent = bj.dealer ? "· " + bj.dealerTotal : "";
+  const live = bj.phase === "player";
+  $("bjActs").hidden = !live;
+  $("go-blackjack").disabled = live || !isLive() || !auth;
+  $("bjDouble").disabled = !(live && bj.canDouble);
+}
+function bjApply(r){
+  bj = r; if(r.balance != null) balance = r.balance;
+  if(r.phase === "done") showRes($("bjRes"), r.bet, r.payout, r.note);
+  bjRender(); render();
+}
+async function loadBj(){ if(!auth) return; try { const r = await rpc("bj_state", creds()); if(r.phase === "player"){ bj = r; $("bjRes").className="result"; $("bjRes").textContent = "Hand in progress"; bjRender(); } } catch(e){} }
+async function bjCall(fn, extra){
+  if(busy) return; busy = true;
+  try { bjApply(await rpc(fn, {...creds(), ...extra})); } catch(e){ onAuthError(e); } finally { busy = false; refresh(); }
+}
+$("go-blackjack").addEventListener("click", () => {
+  const bet = getBet("blackjack"); const err = preCheck(bet); if(err) return toast(err);
+  $("bjRes").className = "result"; $("bjRes").textContent = "";
+  bjCall("bj_deal", {p_bet: bet});
+});
+$("bjHit").addEventListener("click", () => bjCall("bj_action", {p_action:"hit"}));
+$("bjStand").addEventListener("click", () => bjCall("bj_action", {p_action:"stand"}));
+$("bjDouble").addEventListener("click", () => bjCall("bj_action", {p_action:"double"}));
+bjRender();
+
+/* ---------- SLOTS ---------- */
+const SYMS = ["TD","2PT","FG","PAT","SACK"];
+let slotBusy = false;
+$("go-slots").addEventListener("click", async () => {
+  if(slotBusy) return;
+  const bet = getBet("slots"); const err = preCheck(bet); if(err) return toast(err);
+  slotBusy = true; busy = true; $("slRes").className = "result"; $("slRes").textContent = "";
+  const reels = [0,1,2].map(i => $("r"+i)); reels.forEach(r => r.classList.add("spin"));
+  const iv = setInterval(() => reels.forEach(r => { if(r.classList.contains("spin")) r.textContent = SYMS[Math.floor(Math.random()*5)]; }), 70);
+  let r;
+  try { r = await rpc("play_slots", {...creds(), p_bet: bet}); }
+  catch(e){ clearInterval(iv); reels.forEach(x => x.classList.remove("spin")); slotBusy = false; busy = false; return onAuthError(e); }
+  pendingReveal += r.payout; balance = r.balance; render();
+  reels.forEach((el,i) => setTimeout(() => { el.classList.remove("spin"); el.textContent = r.reels[i];
+    if(i === 2){ clearInterval(iv); slotBusy = false; busy = false; pendingReveal -= r.payout; showRes($("slRes"), bet, r.payout, r.reels.join(" ")); refresh(); } },
+    reduced() ? 100*(i+1) : 600 + i*450));
+});
+
+/* ---------- DICE ---------- */
+function diceUI(){ const t=+$("dTarget").value; $("dUnder").textContent=t; $("dChance").textContent=t+"%"; $("dMult").textContent=(99/t).toFixed(2)+"x"; $("dTrack").style.setProperty("--t",t+"%"); }
+$("dTarget").addEventListener("input", diceUI); diceUI();
+$("go-dice").addEventListener("click", async () => {
+  if(busy) return;
+  const bet = getBet("dice"); const err = preCheck(bet); if(err) return toast(err);
+  busy = true;
+  try {
+    const r = await rpc("play_dice", {...creds(), p_bet: bet, p_target: +$("dTarget").value});
+    balance = r.balance;
+    const roll = Number(r.roll);
+    $("dRoll").textContent = roll.toFixed(2); $("dRoll").style.color = r.payout ? "var(--win)" : "var(--loss)";
+    $("dMark").style.left = Math.min(99.5, Math.max(.5, roll)) + "%";
+    showRes($("diRes"), bet, r.payout, "rolled " + roll.toFixed(2));
+  } catch(e){ onAuthError(e); } finally { busy = false; refresh(); }
+});
+
+/* ---------- PLINKO ---------- */
+const PM=[25,8,3.5,1.8,1.2,0.6,0.4,0.6,1.2,1.8,3.5,8,25], ROWS=12;
+const pc=$("plinko"), px=pc.getContext("2d"); let balls=[], plAnim=false, inflight=0;
+function geo(){ const W=pc.width,H=pc.height, sp=W/(ROWS+3), top=50, rowH=(H-top-110)/ROWS; return {W,H,sp,top,rowH,cx:W/2}; }
+function drawPlinko(){
+  const {W,H,sp,top,rowH,cx}=geo(); px.clearRect(0,0,W,H);
+  px.fillStyle="#8a96ad";
+  for(let i=0;i<ROWS;i++) for(let j=0;j<i+3;j++){ px.beginPath(); px.arc(cx+(j-1-i/2)*sp, top+i*rowH, 6,0,2*Math.PI); px.fill(); }
+  const by=top+ROWS*rowH+14;
+  PM.forEach((m,k)=>{ const x=cx+(k-6)*sp, hot=Math.min(1,Math.log(m*2+1)/Math.log(51));
+    px.fillStyle=`rgba(255,178,46,${0.15+hot*0.85})`; px.fillRect(x-sp/2+3,by,sp-6,52);
+    px.fillStyle= m>=1.2?"#0a1120":"#e9eef7";
+    px.font=`700 ${sp>70?22:18}px 'JetBrains Mono', monospace`; px.textAlign="center"; px.fillText(m+"x", x, by+33); });
+  balls.forEach(b=>{ px.beginPath(); px.arc(b.x,b.y,11,0,2*Math.PI); px.fillStyle="#4fdc8e"; px.fill(); });
+}
+function plStep(t){
+  const {sp,top,rowH,cx}=geo(); const per=reduced()?20:130;
+  balls.forEach(b=>{
+    const el=(t-b.t0)/per, i=Math.min(ROWS,Math.floor(el)), f=Math.min(1,el-i);
+    const k0=b.path.slice(0,i).reduce((a,c)=>a+c,0);
+    if(i>=ROWS){ b.x=cx+(k0-6)*sp; b.y=top+ROWS*rowH+4; if(!b.done){ b.done=true; b.finish(); } return; }
+    const x0=cx+(k0-i/2)*sp, x1=cx+(k0+b.path[i]-(i+1)/2)*sp;
+    b.x=x0+(x1-x0)*f; b.y=top+i*rowH-18+rowH*f - Math.sin(Math.PI*f)*rowH*0.35;
+  });
+  balls=balls.filter(b=>!b.done || t-b.t0 < per*ROWS+500);
+  drawPlinko();
+  if(balls.length) requestAnimationFrame(plStep); else plAnim=false;
+}
+drawPlinko();
+$("go-plinko").addEventListener("click", async () => {
+  if(balls.length + inflight >= 5) return toast("Let a few balls land first.");
+  const bet = getBet("plinko"); const err = preCheck(bet); if(err) return toast(err);
+  inflight++; busy = true;
+  let r;
+  try { r = await rpc("play_plinko", {...creds(), p_bet: bet}); }
+  catch(e){ inflight--; busy = inflight > 0; return onAuthError(e); }
+  inflight--;
+  pendingReveal += r.payout; balance = r.balance; render();
+  balls.push({path:r.path, t0:performance.now(), x:0, y:0, done:false, finish:()=>{
+    pendingReveal -= r.payout; busy = inflight > 0 || balls.some(b=>!b.done); showRes($("plRes"), bet, r.payout, r.mult + "x"); render(); }});
+  if(!plAnim){ plAnim=true; requestAnimationFrame(plStep); }
+});
+
+/* ---------- commish ---------- */
+let adminPin = null, settleArmed = false, overview = [];
+async function loadAdmin(){
+  overview = await rpc("admin_overview", {p_pin: adminPin});
+  $("adminLogin").hidden = true; $("adminBody").hidden = false;
+  $("cMax").value = cfg?.max_bet; $("cDay").value = cfg?.daily_limit; $("cOpen").value = cfg?.open ? "1" : "0";
+  $("cTable").innerHTML = overview.map(t => `<tr><td class="tname">${esc(t.name)}</td>
+    <td class="r"><input class="num" data-base="${t.id}" type="number" value="${t.base}" aria-label="Sleeper base for ${esc(t.name)}"></td>
+    <td class="r num ${t.unsettled>0?"pos":t.unsettled<0?"neg":""}">${t.unsettled?sfmt(t.unsettled):"—"}</td>
+    <td class="r num"><b>${fmt(t.setTo)}</b></td>
+    <td>${t.claimed?`<button class="linkbtn" data-reset="${t.id}">Reset</button>`:'<span class="small">open</span>'}</td></tr>`).join("");
+}
+$("adminLogin").addEventListener("submit", async e => {
+  e.preventDefault(); adminPin = $("adminPin").value.trim();
+  try { await loadAdmin(); } catch(err){ adminPin = null; toast(err.message); }
+});
+$("cSave").addEventListener("click", async () => {
+  try { await rpc("admin_set_config", {p_pin: adminPin, p_open: $("cOpen").value === "1", p_max: parseInt($("cMax").value)||1, p_daily: parseInt($("cDay").value)||1}); toast("Rules saved."); await refresh(); await loadAdmin(); }
+  catch(e){ toast(e.message); }
+});
+$("cBases").addEventListener("click", async () => {
+  try {
+    for(const i of document.querySelectorAll("[data-base]")){
+      const id = +i.dataset.base, v = parseInt(i.value), cur = overview.find(t => t.id === id);
+      if(Number.isFinite(v) && cur && v !== cur.base) await rpc("admin_set_base", {p_pin: adminPin, p_team: id, p_base: v});
+    }
+    toast("Sleeper bases saved."); await refresh(); await loadAdmin();
+  } catch(e){ toast(e.message); }
+});
+$("cSettle").addEventListener("click", async () => {
+  if(!settleArmed){ settleArmed = true; $("cConfirm").hidden = false; setTimeout(() => { settleArmed = false; $("cConfirm").hidden = true; }, 5000); return; }
+  settleArmed = false; $("cConfirm").hidden = true;
+  try { await rpc("admin_settle", {p_pin: adminPin}); toast("Settled. Casino balances now match Sleeper."); await refresh(); await loadAdmin(); }
+  catch(e){ toast(e.message); }
+});
+$("cTable").addEventListener("click", async e => {
+  const id = e.target.dataset.reset; if(!id) return;
+  try { await rpc("admin_reset_pin", {p_pin: adminPin, p_team: +id}); toast("PIN reset. They can claim the team again."); await refresh(); await loadAdmin(); }
+  catch(err){ toast(err.message); }
+});
+
+/* ---------- render ---------- */
+function render(){
+  if(cfg && !cfg.open) showNotice("The casino is closed. The commish has paused betting.");
+  else if(cfg && cfg.blackout) showNotice("Betting is closed from 8 PM Monday until waivers clear at 6 AM Tuesday (Eastern).");
+
+  const me = myTeam();
+  const loggedIn = !!(auth && me);
+  $("pickerSec").hidden = loggedIn || !teams.length;
+  if(!loggedIn && teams.length && $("pinForm").hidden)
+    $("picker").innerHTML = teams.map(t => `<button data-r="${t.id}"><b>${esc(t.name)}</b><small>@${esc(t.owner)} · ${t.claimed?"claimed":"open, set a PIN"}</small></button>`).join("");
+  $("gameSec").hidden = !loggedIn;
+  $("logout").hidden = !loggedIn;
+
+  if(loggedIn){
+    $("balBig").textContent = fmt(shownBal()); $("whoLine").textContent = me.name;
+    $("meter").hidden = false; const dw = dayWagered(), dl = cfg?.daily_limit || 1;
+    $("dayW").textContent = fmt(dw); $("dayL").textContent = fmt(dl); $("maxB").textContent = fmt(cfg?.max_bet || 0);
+    $("dayBar").style.width = Math.min(100, dw/dl*100) + "%";
+  } else { $("balBig").textContent = "$—"; $("whoLine").textContent = "Pick your team below"; $("meter").hidden = true; }
+  ["roulette","slots","dice","plinko"].forEach(g => { $("go-"+g).disabled = !isLive(); });
+  bjRender();
+
+  if(teams.length){
+    const bank = -teams.reduce((a,t) => a + t.net, 0), bankU = -teams.reduce((a,t) => a + t.unsettled, 0);
+    $("bankAll").textContent = fmt(bank);
+    $("bankUnset").textContent = bankU ? sfmt(bankU) + " since last settle" : "";
+    $("lb").innerHTML = [...teams].sort((a,b) => b.net - a.net).map(t => `<tr class="${t.id===auth?.team?"me":""}"><td class="tname">${esc(t.name)}<small>@${esc(t.owner)}</small></td>
+      <td class="r num ${t.net>0?"pos":t.net<0?"neg":""}">${t.net?sfmt(t.net):"—"}</td><td class="r num">${fmt(t.available)}</td></tr>`).join("");
+  }
+  const now = Date.now(); const ago = s => { const d=(now-new Date(s).getTime())/1000; return d<60?"just now":d<3600?Math.floor(d/60)+"m ago":d<86400?Math.floor(d/3600)+"h ago":Math.floor(d/86400)+"d ago"; };
+  $("feed").innerHTML = feed.length ? feed.slice(0,25).map(e => { const p = e.payout - e.bet;
+    return `<li><span><b>${esc(e.name)}</b> · ${GAME_NAMES[e.game]||e.game} · bet ${fmt(e.bet)}</span><span class="num ${p>0?"pos":p<0?"neg":""}">${p?sfmt(p):"push"}</span><span class="d">${esc(e.detail||"")} · ${ago(e.created_at)}</span></li>`; }).join("")
+    : `<li class="empty">No bets yet. Someone has to go first.</li>`;
+}
+
+refresh().then(loadBj);
+setInterval(() => { if(!document.hidden) refresh(); }, 6000);
+document.addEventListener("visibilitychange", () => { if(!document.hidden) refresh(); });
+})();
+</script>
+</body></html>
