@@ -94,6 +94,11 @@ h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.02e
 .hand{display:flex;flex-direction:column;gap:6px}
 .hand .label{color:#9ec9b1}
 .cards{display:flex;gap:6px;flex-wrap:wrap;min-height:78px}
+.hands{display:flex;flex-wrap:wrap;gap:12px}
+.hands .hand{padding:6px 8px;border-radius:6px;border:2px solid transparent;min-width:0}
+.hands .hand.on{border-color:var(--amber);background:rgba(255,178,46,.08)}
+.hands .hand .out{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.hands .hand .out.win{color:var(--win)} .hands .hand .out.loss{color:var(--loss)} .hands .hand .out.push{color:var(--amber)}
 .card{width:52px;height:74px;background:#f6f3ea;color:#111;border-radius:5px;display:flex;flex-direction:column;justify-content:space-between;padding:4px 6px;font-weight:700;font-size:17px;box-shadow:0 2px 6px rgba(0,0,0,.35);animation:deal .25s ease-out}
 .card.r{color:#b3202b}
 .card .s{align-self:flex-end;font-size:20px}
@@ -237,16 +242,17 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
     <div class="stage" data-game="blackjack" hidden>
       <div class="table">
         <div class="hand"><span class="label">Dealer <span id="dTot"></span></span><div class="cards" id="dCards"></div></div>
-        <div class="hand"><span class="label">You <span id="pTot"></span></span><div class="cards" id="pCards"></div></div>
+        <div class="hands" id="pHands"></div>
       </div>
       <div class="betrow" data-bet="blackjack"></div>
       <div class="betrow" id="bjActs" hidden>
         <button class="go" id="bjHit">Hit</button>
         <button class="go alt" id="bjStand">Stand</button>
         <button class="go alt" id="bjDouble">Double</button>
+        <button class="go alt" id="bjSplit" hidden>Split</button>
       </div>
       <div class="result" id="bjRes"></div>
-      <div class="rules">Blackjack pays 3 to 2. Dealer stands on all 17s. Double on your first two cards. No splits. Your hand is saved on the server, so if you close the page mid-hand you can pick it back up.</div>
+      <div class="rules">Blackjack pays 3 to 2. Dealer stands on all 17s. Double on your first two cards, including after a split. Split any pair (10, J, Q and K count as a pair) up to 4 hands. Split aces get one card each, and 21 after a split pays 1 to 1. Your hand is saved on the server, so if you close the page mid-hand you can pick it back up.</div>
     </div>
 
     <!-- SLOTS -->
@@ -521,22 +527,30 @@ function cardHTML(c){
   const s = c.slice(-1), r = c.slice(0,-1), red = s==="♥"||s==="♦";
   return `<div class="card${red?" r":""}" aria-label="${r}${s}"><span>${r}</span><span class="s">${s}</span></div>`;
 }
+function bjNorm(r){  // accepts the older single-hand shape too
+  if(!r.hands && r.player) r.hands = [{cards:r.player, total:r.playerTotal, bet:r.bet, payout:r.payout, done:r.phase==="done"}];
+  return r;
+}
 function bjRender(){
-  $("pCards").innerHTML = (bj.player||[]).map(cardHTML).join("");
+  const hands = bj.hands || [], many = hands.length > 1, live = bj.phase === "player";
+  $("pHands").innerHTML = hands.length ? hands.map((h,i) => {
+    const on = live && many && i === bj.active;
+    const out = h.payout == null ? "" : (h.payout > h.bet ? `<span class="out win">+${fmt(h.payout-h.bet)}</span>` : h.payout === h.bet ? `<span class="out push">push</span>` : `<span class="out loss">-${fmt(h.bet-h.payout)}</span>`);
+    return `<div class="hand${on?" on":""}"><span class="label">${many?"Hand "+(i+1):"You"} · ${h.total}${many?" · "+fmt(h.bet):""} ${out}</span><div class="cards">${(h.cards||[]).map(cardHTML).join("")}</div></div>`;
+  }).join("") : `<div class="hand"><span class="label">You</span><div class="cards"></div></div>`;
   $("dCards").innerHTML = (bj.dealer||[]).map(cardHTML).join("");
-  $("pTot").textContent = bj.player ? "· " + bj.playerTotal : "";
   $("dTot").textContent = bj.dealer ? "· " + bj.dealerTotal : "";
-  const live = bj.phase === "player";
   $("bjActs").hidden = !live;
   $("go-blackjack").disabled = live || !isLive() || !auth;
   $("bjDouble").disabled = !(live && bj.canDouble);
+  $("bjSplit").hidden = !(live && bj.canSplit);
 }
 function bjApply(r){
-  bj = r; if(r.balance != null) balance = r.balance;
+  bj = bjNorm(r); if(r.balance != null) balance = r.balance;
   if(r.phase === "done") showRes($("bjRes"), r.bet, r.payout, r.note);
   bjRender(); render();
 }
-async function loadBj(){ if(!auth) return; try { const r = await rpc("bj_state", creds()); if(r.phase === "player"){ bj = r; $("bjRes").className="result"; $("bjRes").textContent = "Hand in progress"; bjRender(); } } catch(e){} }
+async function loadBj(){ if(!auth) return; try { const r = await rpc("bj_state", creds()); if(r.phase === "player"){ bj = bjNorm(r); $("bjRes").className="result"; $("bjRes").textContent = "Hand in progress"; bjRender(); } } catch(e){} }
 async function bjCall(fn, extra){
   if(busy) return; busy = true;
   try { bjApply(await rpc(fn, {...creds(), ...extra})); } catch(e){ onAuthError(e); } finally { busy = false; refresh(); }
@@ -549,6 +563,7 @@ $("go-blackjack").addEventListener("click", () => {
 $("bjHit").addEventListener("click", () => bjCall("bj_action", {p_action:"hit"}));
 $("bjStand").addEventListener("click", () => bjCall("bj_action", {p_action:"stand"}));
 $("bjDouble").addEventListener("click", () => bjCall("bj_action", {p_action:"double"}));
+$("bjSplit").addEventListener("click", () => bjCall("bj_action", {p_action:"split"}));
 bjRender();
 
 /* ---------- SLOTS ---------- */
