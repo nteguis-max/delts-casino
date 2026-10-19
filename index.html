@@ -58,7 +58,8 @@ h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.02e
 .closed-banner{background:#2a1418;border:1px solid #5a2129;color:#ffb3b8;padding:10px 12px;border-radius:6px;font-size:14px}
 
 /* tabs */
-.tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.tabs{display:flex;flex-wrap:wrap;gap:0 4px;border-bottom:1px solid var(--line)}
+@media (max-width:560px){.tabs button{font-size:17px;padding:8px 9px 7px}}
 .tabs button{background:none;border:0;padding:10px 12px 9px;font-family:var(--display);font-size:19px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);border-bottom:3px solid transparent;white-space:nowrap}
 .tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--turf)}
 .stage{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
@@ -122,6 +123,23 @@ input[type=range]{width:100%;accent-color:var(--turf)}
 .rollnum{font-family:var(--mono);font-size:44px;font-weight:700;line-height:1}
 
 /* plinko */
+.felt{background:radial-gradient(ellipse at 50% 0%,#164a33,#0d2b1e 70%);border:1px solid #1f5a3e;border-radius:6px;padding:18px 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.dicepair{display:flex;gap:14px}
+.die{width:64px;height:64px;background:#f6f3ea;border-radius:12px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:9px;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 -3px 0 rgba(0,0,0,.12)}
+.die i{display:block;margin:auto;width:11px;height:11px;border-radius:50%}
+.die i.p{background:#1a1a1a}
+.die.tumble{transform:rotate(12deg) translateY(-4px);transition:transform .05s}
+.cpoint{display:flex;flex-direction:column;align-items:center;gap:4px}
+.cpoint .label{color:#9ec9b1}
+.cpoint b{font-family:var(--display);font-size:22px;font-weight:900;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:#0a1120;color:var(--muted);border:3px solid #26324c}
+.cpoint b.on{background:#f6f3ea;color:#0a1120;border-color:var(--amber)}
+.sides{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sides button{background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:10px 12px;text-align:left;display:flex;flex-direction:column;gap:2px}
+.sides button small{color:var(--muted);font-size:12px}
+.sides button[aria-pressed="true"]{border-color:var(--amber);box-shadow:inset 0 0 0 1px var(--amber)}
+.rolllog{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px;max-height:180px;overflow:auto;font-size:13.5px}
+.rolllog li{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid var(--line)}
+.rolllog li:first-child{color:var(--fg)} .rolllog li span{color:var(--muted)}
 .plinkobox{width:100%;max-width:520px;margin:0 auto}
 .plinkobox canvas{width:100%;display:block}
 
@@ -212,6 +230,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <button role="tab" data-g="slots" aria-selected="false">Slots</button>
       <button role="tab" data-g="dice" aria-selected="false">Dice</button>
       <button role="tab" data-g="plinko" aria-selected="false">Plinko</button>
+      <button role="tab" data-g="craps" aria-selected="false">Craps</button>
     </nav>
 
     <!-- ROULETTE -->
@@ -291,6 +310,22 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <div class="rules">Rolls 0.00 to 99.99. Win if the roll lands under your number. Payout is 99 divided by your number, so the house keeps 1%.</div>
     </div>
 
+    <!-- CRAPS -->
+    <div class="stage" data-game="craps" hidden>
+      <div class="felt">
+        <div class="dicepair"><div class="die" id="cd1"></div><div class="die" id="cd2"></div></div>
+        <div class="cpoint"><span class="label">Point</span><b id="cPoint">OFF</b></div>
+      </div>
+      <div class="sides" id="cSides">
+        <button data-side="shooter" aria-pressed="true"><b>Shooter</b><small>Bet the dice win</small></button>
+        <button data-side="fader" aria-pressed="false"><b>Fader</b><small>Bet against the shooter</small></button>
+      </div>
+      <div class="betrow" data-bet="craps"></div>
+      <div class="result" id="crRes"></div>
+      <ol class="rolllog" id="cLog"></ol>
+      <div class="rules">Street rules, even money. Shooter: 7 or 11 on the come out wins, 2, 3 or 12 is craps and loses. Any other number becomes the point, and the shooter keeps rolling until they hit the point (win) or roll a 7 (seven out, lose). Fader takes the other side: craps on the come out wins, 7 or 11 loses, and 12 is a push. The house keeps about 1.4% either way.</div>
+    </div>
+
     <!-- PLINKO -->
     <div class="stage" data-game="plinko" hidden>
       <div class="plinkobox"><canvas id="plinko" width="1040" height="760"></canvas></div>
@@ -357,7 +392,7 @@ const sfmt = n => (n > 0 ? "+" : "") + fmt(n);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const reduced = () => matchMedia("(prefers-reduced-motion:reduce)").matches;
 let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3600); }
-const GAME_NAMES = {roulette:"Roulette",blackjack:"Blackjack",slots:"Slots",dice:"Dice",plinko:"Plinko",rebate:"Loss rebate"};
+const GAME_NAMES = {roulette:"Roulette",blackjack:"Blackjack",slots:"Slots",dice:"Dice",plinko:"Plinko",craps:"Craps",rebate:"Loss rebate"};
 
 /* ---------- server ---------- */
 const H = {apikey: SUPABASE_KEY, "Content-Type": "application/json"};
@@ -435,8 +470,8 @@ $("pinForm").addEventListener("submit", async e => {
 $("logout").addEventListener("click", () => { auth = null; balance = null; try{ localStorage.removeItem("delts-auth"); }catch(e){} render(); });
 
 /* ---------- bet controls ---------- */
-const betVals = {roulette:100, blackjack:100, slots:50, dice:100, plinko:50};
-const goLabels = {roulette:"Spin", blackjack:"Deal", slots:"Spin", dice:"Roll", plinko:"Drop"};
+const betVals = {roulette:100, blackjack:100, slots:50, dice:100, plinko:50, craps:100};
+const goLabels = {roulette:"Spin", blackjack:"Deal", slots:"Spin", dice:"Roll", plinko:"Drop", craps:"Shoot"};
 document.querySelectorAll("[data-bet]").forEach(row => {
   const g = row.dataset.bet;
   row.innerHTML = `<input type="number" id="bet-${g}" min="1" step="1" inputmode="numeric" value="${betVals[g]}" aria-label="Bet amount">
@@ -605,6 +640,40 @@ $("go-dice").addEventListener("click", async () => {
   } catch(e){ onAuthError(e); } finally { busy = false; refresh(); }
 });
 
+/* ---------- CRAPS ---------- */
+const PIPS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+function drawDie(el, n){ el.innerHTML = Array.from({length:9}, (_,i) => `<i${PIPS[n].includes(i)?' class="p"':''}></i>`).join(""); el.setAttribute("aria-label", "Die showing " + n); }
+drawDie($("cd1"), 6); drawDie($("cd2"), 5);
+let crSide = "shooter", crBusy = false;
+$("cSides").addEventListener("click", e => { const b = e.target.closest("button[data-side]"); if(!b || crBusy) return;
+  crSide = b.dataset.side; document.querySelectorAll("#cSides button").forEach(x => x.setAttribute("aria-pressed", x === b)); });
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+function callFor(sum, point, first){
+  if(first){ if(sum===7||sum===11) return "Seven-eleven!"; if(sum===2) return "Snake eyes. Craps."; if(sum===3) return "Ace-deuce. Craps."; if(sum===12) return "Boxcars. Craps."; return "Point is " + sum + "."; }
+  if(sum===point) return "Hit the " + point + "!"; if(sum===7) return "Seven out."; return sum + ". Roll again.";
+}
+$("go-craps").addEventListener("click", async () => {
+  if(crBusy) return;
+  const bet = getBet("craps"); const err = preCheck(bet); if(err) return toast(err);
+  crBusy = true; busy = true; $("crRes").className = "result"; $("crRes").textContent = ""; $("cLog").innerHTML = ""; $("cPoint").textContent = "OFF"; $("cPoint").classList.remove("on");
+  let r;
+  try { r = await rpc("play_craps", {...creds(), p_bet: bet, p_side: crSide}); }
+  catch(e){ crBusy = false; busy = false; return onAuthError(e); }
+  pendingReveal += r.payout; balance = r.balance; render();
+  const fast = reduced() || r.rolls.length > 12, d = [$("cd1"), $("cd2")];
+  let point = null;
+  for(let i = 0; i < r.rolls.length; i++){
+    const [a, b] = r.rolls[i], sum = a + b;
+    if(!reduced()){ d.forEach(x => x.classList.add("tumble")); for(let k = 0; k < (fast ? 3 : 7); k++){ drawDie(d[0], 1 + Math.floor(Math.random()*6)); drawDie(d[1], 1 + Math.floor(Math.random()*6)); await sleep(55); } d.forEach(x => x.classList.remove("tumble")); }
+    drawDie(d[0], a); drawDie(d[1], b);
+    const li = document.createElement("li"); li.innerHTML = `<b class="num">${a} + ${b} = ${sum}</b> <span>${callFor(sum, point, i === 0)}</span>`; $("cLog").prepend(li);
+    if(i === 0 && r.point){ point = r.point; $("cPoint").textContent = point; $("cPoint").classList.add("on"); }
+    await sleep(fast ? 220 : 650);
+  }
+  crBusy = false; busy = false; pendingReveal -= r.payout;
+  showRes($("crRes"), bet, r.payout, r.note.split(" · ")[1]); refresh();
+});
+
 /* ---------- PLINKO ---------- */
 const PM=[25,8,3.5,1.8,1.2,0.6,0.4,0.6,1.2,1.8,3.5,8,25], ROWS=12;
 const pc=$("plinko"), px=pc.getContext("2d"); let balls=[], plAnim=false, inflight=0;
@@ -717,7 +786,7 @@ function render(){
     $("dayW").textContent = fmt(dw); $("dayL").textContent = fmt(dl); $("maxB").textContent = fmt(cfg?.max_bet || 0);
     $("dayBar").style.width = Math.min(100, dw/dl*100) + "%";
   } else { $("balBig").textContent = "$—"; $("whoLine").textContent = "Pick your team below"; $("meter").hidden = true; }
-  ["roulette","slots","dice","plinko"].forEach(g => { $("go-"+g).disabled = !isLive(); });
+  ["roulette","slots","dice","plinko","craps"].forEach(g => { $("go-"+g).disabled = !isLive(); });
   bjRender();
 
   if(teams.length){
