@@ -184,6 +184,8 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
 .pinform input{width:120px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--fg);padding:10px;font-family:var(--mono);font-size:18px;letter-spacing:.2em}
 .pinform .label{width:100%}
 .picker button.sel{border-color:var(--amber)}
+#cSteps{display:flex;flex-direction:column;gap:6px;margin:4px 0 10px}
+#cSteps p{margin:0}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--surface-2);border:1px solid var(--line);padding:10px 14px;border-radius:6px;font-size:14px;max-width:min(92vw,460px);z-index:20}
 @media (prefers-reduced-motion:reduce){.card{animation:none}.track .mark{transition:none}}
 </style>
@@ -366,15 +368,20 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <label id="cRebateWrap" hidden>Loss rebate %<input id="cRebate" type="number" min="0" max="100"></label>
       <button class="go alt" id="cSave" style="font-size:16px;padding:8px 14px">Save rules</button>
     </div>
-    <p class="small">To settle: set each team's FAAB in Sleeper (Commissioner tools, edit FAAB budgets) to the "Set Sleeper to" number, then press Mark settled. "Set Sleeper to" already includes this week's loss rebate, which is paid out when you press Mark settled. After waivers run, change a team's Sleeper base here so it matches Sleeper.</p>
+    <div class="small" id="cSteps">
+      <p><b>Monday, before 8 PM:</b> in Sleeper (Commissioner tools, edit FAAB budgets), set each team to its "Set Sleeper to" number, then press Mark settled. That locks in this week's rebates as owed.</p>
+      <p><b>Tuesday, after waivers clear:</b> type each team's new Sleeper FAAB into "Sleeper base" and press Save Sleeper bases. Then set each team that's owed a rebate to its "Sleeper + rebate" number in Sleeper, and press Pay rebates.</p>
+    </div>
     <div class="scroll"><table>
-      <thead><tr><th>Team</th><th class="r">Sleeper base</th><th class="r">Unsettled</th><th class="r">Rebate</th><th class="r">Set Sleeper to</th><th>PIN</th></tr></thead>
+      <thead><tr><th>Team</th><th class="r">Sleeper base</th><th class="r">Unsettled</th><th class="r">Set Sleeper to</th><th class="r">Rebate</th><th class="r">Sleeper + rebate</th><th>PIN</th></tr></thead>
       <tbody id="cTable"></tbody>
     </table></div>
     <div class="betrow" style="margin-top:12px">
       <button class="go alt" id="cBases" style="font-size:16px;padding:8px 14px">Save Sleeper bases</button>
       <button class="go" id="cSettle" style="font-size:16px;padding:8px 14px">Mark settled</button>
       <span id="cConfirm" class="small" hidden>Press again to confirm. This clears every unsettled amount.</span>
+      <button class="go alt" id="cPay" style="font-size:16px;padding:8px 14px" hidden>Pay rebates</button>
+      <span id="cPayConfirm" class="small" hidden>Press again to pay. Make sure Sleeper already shows the "Sleeper + rebate" numbers.</span>
     </div>
     </div>
   </details>
@@ -724,11 +731,14 @@ async function loadAdmin(){
   $("adminLogin").hidden = true; $("adminBody").hidden = false;
   $("cMax").value = cfg?.max_bet; $("cDay").value = noLimit() ? 0 : cfg?.daily_limit; $("cOpen").value = cfg?.open ? "1" : "0";
   const hasRebate = cfg && cfg.rebate_pct != null; $("cRebateWrap").hidden = !hasRebate; if(hasRebate) $("cRebate").value = cfg.rebate_pct;
+  const owedTotal = overview.reduce((a,t) => a + (t.owed || 0), 0);
+  $("cPay").hidden = !(owedTotal > 0); $("cPay").textContent = owedTotal > 0 ? "Pay rebates (" + fmt(owedTotal) + ")" : "Pay rebates";
   $("cTable").innerHTML = overview.map(t => `<tr><td class="tname">${esc(t.name)}</td>
     <td class="r"><input class="num" data-base="${t.id}" type="number" value="${t.base}" aria-label="Sleeper base for ${esc(t.name)}"></td>
     <td class="r num ${t.unsettled>0?"pos":t.unsettled<0?"neg":""}">${t.unsettled?sfmt(t.unsettled):"—"}</td>
-    <td class="r num ${t.rebate>0?"pos":""}">${t.rebate?"+"+fmt(t.rebate):"—"}</td>
     <td class="r num"><b>${fmt(t.setTo)}</b></td>
+    <td class="r num ${t.owed>0?"pos":""}">${t.owed>0?"+"+fmt(t.owed)+" owed":(t.estRebate>0?`<span class="small">~${fmt(t.estRebate)} est.</span>`:"—")}</td>
+    <td class="r num">${t.owed>0?`<b>${fmt(t.withRebate)}</b>`:"—"}</td>
     <td>${t.claimed?`<button class="linkbtn" data-reset="${t.id}">Reset</button>`:'<span class="small">open</span>'}</td></tr>`).join("");
 }
 $("adminLogin").addEventListener("submit", async e => {
@@ -753,7 +763,14 @@ $("cBases").addEventListener("click", async () => {
 $("cSettle").addEventListener("click", async () => {
   if(!settleArmed){ settleArmed = true; $("cConfirm").hidden = false; setTimeout(() => { settleArmed = false; $("cConfirm").hidden = true; }, 5000); return; }
   settleArmed = false; $("cConfirm").hidden = true;
-  try { const r = await rpc("admin_settle", {p_pin: adminPin}); toast("Settled." + (r && r.rebated ? " Paid " + fmt(r.rebated) + " in loss rebates." : "") + " Casino balances now match Sleeper."); await refresh(); await loadAdmin(); }
+  try { const r = await rpc("admin_settle", {p_pin: adminPin}); toast("Settled. Casino balances now match Sleeper." + (r && r.owed ? " " + fmt(r.owed) + " in rebates is owed after Tuesday's waivers." : (r && r.rebated ? " Paid " + fmt(r.rebated) + " in loss rebates." : ""))); await refresh(); await loadAdmin(); }
+  catch(e){ toast(e.message); }
+});
+let payArmed = false;
+$("cPay").addEventListener("click", async () => {
+  if(!payArmed){ payArmed = true; $("cPayConfirm").hidden = false; setTimeout(() => { payArmed = false; $("cPayConfirm").hidden = true; }, 6000); return; }
+  payArmed = false; $("cPayConfirm").hidden = true;
+  try { const r = await rpc("admin_pay_rebates", {p_pin: adminPin}); toast("Paid " + fmt(r.paid || 0) + " in loss rebates."); await refresh(); await loadAdmin(); }
   catch(e){ toast(e.message); }
 });
 $("cTable").addEventListener("click", async e => {
@@ -793,7 +810,7 @@ function render(){
     const bank = -teams.reduce((a,t) => a + t.net, 0), bankU = -teams.reduce((a,t) => a + t.unsettled, 0);
     $("bankAll").textContent = fmt(bank);
     if(cfg && cfg.rebate_pct != null){ $("bankNote").hidden = false; $("bankNote").textContent = cfg.rebate_pct > 0
-      ? `Every Monday, ${cfg.rebate_pct}% of the week's bank goes back to the teams that finished the week down, split by how much each lost.`
+      ? `Every Tuesday after waivers clear, ${cfg.rebate_pct}% of the week's bank goes back to the teams that finished the week down, split by how much each lost.`
       : "Lost FAAB stays in the bank."; }
     $("bankUnset").textContent = bankU ? sfmt(bankU) + " since last settle" : "";
     $("lb").innerHTML = [...teams].sort((a,b) => b.net - a.net).map(t => `<tr class="${t.id===auth?.team?"me":""}"><td class="tname">${esc(t.name)}<small>@${esc(t.owner)}</small></td>
