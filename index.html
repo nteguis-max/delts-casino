@@ -183,8 +183,8 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
     </div>
     <div class="hours" id="hours" hidden><i></i><span id="hoursMain"></span><small id="hoursSub"></small></div>
     <div class="meter" id="meter" hidden>
-      <span>Wagered today <b class="num" id="dayW">$0</b> of <span class="num" id="dayL">$0</span></span>
-      <div class="bar"><i id="dayBar"></i></div>
+      <span id="dayWrap">Wagered today <b class="num" id="dayW">$0</b> of <span class="num" id="dayL">$0</span></span>
+      <div class="bar" id="dayBarWrap"><i id="dayBar"></i></div>
       <span>Max bet <b class="num" id="maxB">$0</b></span>
     </div>
   </header>
@@ -325,7 +325,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
     <div id="adminBody" hidden>
     <div class="grid">
       <label>Max bet<input id="cMax" type="number" min="1"></label>
-      <label>Daily wager limit<input id="cDay" type="number" min="1"></label>
+      <label>Daily wager limit (0 = none)<input id="cDay" type="number" min="0"></label>
       <label>Casino<select id="cOpen" style="background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:7px"><option value="1">Open</option><option value="0">Closed</option></select></label>
       <button class="go alt" id="cSave" style="font-size:16px;padding:8px 14px">Save rules</button>
     </div>
@@ -385,6 +385,8 @@ try { auth = JSON.parse(localStorage.getItem("delts-auth") || "null"); } catch(e
 const myTeam = () => teams.find(t => t.id === auth?.team);
 const shownBal = () => (balance ?? myTeam()?.available ?? 0) - pendingReveal;
 const dayWagered = () => myTeam()?.day_wagered || 0;
+const NO_LIMIT = 100000000;  // a daily limit this high means "no daily limit"
+const noLimit = () => (cfg?.daily_limit || 0) >= 1000000;
 const isLive = () => cfg && cfg.open && !cfg.blackout;
 
 async function refresh(){
@@ -444,7 +446,7 @@ document.querySelectorAll("[data-bet]").forEach(row => {
     let v = parseInt(inp.value) || 0;
     if(m === "half") v = Math.max(1, Math.floor(v/2));
     if(m === "dbl") v = v * 2;
-    if(m === "max") v = Math.max(1, Math.min(cfg?.max_bet || v, Math.floor(shownBal()), (cfg?.daily_limit || 0) - dayWagered()));
+    if(m === "max") v = Math.max(1, Math.min(cfg?.max_bet || v, Math.floor(shownBal()), noLimit() ? Infinity : (cfg?.daily_limit || 0) - dayWagered()));
     inp.value = v;
   });
 });
@@ -649,7 +651,7 @@ let adminPin = null, settleArmed = false, overview = [];
 async function loadAdmin(){
   overview = await rpc("admin_overview", {p_pin: adminPin});
   $("adminLogin").hidden = true; $("adminBody").hidden = false;
-  $("cMax").value = cfg?.max_bet; $("cDay").value = cfg?.daily_limit; $("cOpen").value = cfg?.open ? "1" : "0";
+  $("cMax").value = cfg?.max_bet; $("cDay").value = noLimit() ? 0 : cfg?.daily_limit; $("cOpen").value = cfg?.open ? "1" : "0";
   $("cTable").innerHTML = overview.map(t => `<tr><td class="tname">${esc(t.name)}</td>
     <td class="r"><input class="num" data-base="${t.id}" type="number" value="${t.base}" aria-label="Sleeper base for ${esc(t.name)}"></td>
     <td class="r num ${t.unsettled>0?"pos":t.unsettled<0?"neg":""}">${t.unsettled?sfmt(t.unsettled):"—"}</td>
@@ -661,7 +663,7 @@ $("adminLogin").addEventListener("submit", async e => {
   try { await loadAdmin(); } catch(err){ adminPin = null; toast(err.message); }
 });
 $("cSave").addEventListener("click", async () => {
-  try { await rpc("admin_set_config", {p_pin: adminPin, p_open: $("cOpen").value === "1", p_max: parseInt($("cMax").value)||1, p_daily: parseInt($("cDay").value)||1}); toast("Rules saved."); await refresh(); await loadAdmin(); }
+  try { await rpc("admin_set_config", {p_pin: adminPin, p_open: $("cOpen").value === "1", p_max: parseInt($("cMax").value)||1, p_daily: (parseInt($("cDay").value) || 0) <= 0 ? NO_LIMIT : parseInt($("cDay").value)}); toast("Rules saved."); await refresh(); await loadAdmin(); }
   catch(e){ toast(e.message); }
 });
 $("cBases").addEventListener("click", async () => {
@@ -705,6 +707,7 @@ function render(){
   if(loggedIn){
     $("balBig").textContent = fmt(shownBal()); $("whoLine").textContent = me.name;
     $("meter").hidden = false; const dw = dayWagered(), dl = cfg?.daily_limit || 1;
+    $("dayWrap").hidden = $("dayBarWrap").hidden = noLimit();
     $("dayW").textContent = fmt(dw); $("dayL").textContent = fmt(dl); $("maxB").textContent = fmt(cfg?.max_bet || 0);
     $("dayBar").style.width = Math.min(100, dw/dl*100) + "%";
   } else { $("balBig").textContent = "$—"; $("whoLine").textContent = "Pick your team below"; $("meter").hidden = true; }
