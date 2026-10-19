@@ -45,6 +45,13 @@ h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.02e
 .bal{text-align:right}
 .bal .big{font-family:var(--mono);font-weight:700;font-size:clamp(28px,7vw,40px);color:var(--amber);text-shadow:0 0 18px rgba(255,178,46,.25);line-height:1.05}
 .bal .who{font-size:13px;color:var(--muted)}
+.hours{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;font-weight:600;padding:7px 10px;border-radius:4px;background:var(--surface-2);border:1px solid var(--line)}
+.hours i{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:none}
+.hours.open i{background:var(--win);box-shadow:0 0 8px var(--win)}
+.hours.closed{border-color:#5a2129;background:#2a1418;color:#ffb3b8}
+.hours.closed i{background:var(--loss)}
+.hours small{font-weight:500;color:var(--muted);font-size:12px}
+.hours.closed small{color:#e7a3a8}
 .meter{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center;font-size:12px;color:var(--muted)}
 .meter .bar{flex:1 1 160px;height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;min-width:120px}
 .meter .bar i{display:block;height:100%;background:var(--amber);width:0}
@@ -169,6 +176,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <div class="big" id="balBig">$—</div>
       <div class="who" id="whoLine">Pick your team below</div>
     </div>
+    <div class="hours" id="hours" hidden><i></i><span id="hoursMain"></span><small id="hoursSub"></small></div>
     <div class="meter" id="meter" hidden>
       <span>Wagered today <b class="num" id="dayW">$0</b> of <span class="num" id="dayL">$0</span></span>
       <div class="bar"><i id="dayBar"></i></div>
@@ -222,7 +230,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
           <div class="result" id="rlRes"></div>
         </div>
       </div>
-      <div class="rules">Closed every Monday 8 PM to Tuesday 6 AM Eastern while MNF plays and waivers run. Single zero wheel. Red, black, odd, even and halves pay 1 to 1. Dozens pay 2 to 1. A single number pays 35 to 1. Zero loses every outside bet.</div>
+      <div class="rules">Single zero wheel. Red, black, odd, even and halves pay 1 to 1. Dozens pay 2 to 1. A single number pays 35 to 1. Zero loses every outside bet.</div>
     </div>
 
     <!-- BLACKJACK -->
@@ -439,7 +447,7 @@ function preCheck(bet){
   if(!auth) return "Pick your team first.";
   if(!cfg?.open) return "The casino is closed right now.";
   if(cfg.blackout) return "Betting is closed from 8 PM Monday until waivers clear at 6 AM Tuesday (Eastern).";
-  if(!Number.isInteger(bet) || bet < 1) return "Enter a whole-dollar bet of at least $1.";
+  if(!Number.isInteger(bet) || bet < 1) return "Minimum bet is $10.";
   return null;  // the server checks the rest
 }
 function creds(){ return {p_team: auth.team, p_pin: auth.pin}; }
@@ -664,8 +672,12 @@ $("cTable").addEventListener("click", async e => {
 
 /* ---------- render ---------- */
 function render(){
-  if(cfg && !cfg.open) showNotice("The casino is closed. The commish has paused betting.");
-  else if(cfg && cfg.blackout) showNotice("Betting is closed from 8 PM Monday until waivers clear at 6 AM Tuesday (Eastern).");
+  if(cfg){
+    const h=$("hours"); h.hidden=false;
+    if(!cfg.open){ h.className="hours closed"; $("hoursMain").textContent="Casino closed"; $("hoursSub").textContent="The commish has paused betting."; }
+    else if(cfg.blackout){ h.className="hours closed"; $("hoursMain").textContent="Closed for MNF and waivers"; $("hoursSub").textContent="Reopens Tuesday 6 AM ET"; }
+    else { h.className="hours open"; $("hoursMain").textContent="Open"; $("hoursSub").textContent="Closes Monday 8 PM ET for MNF and waivers · $10 min bet"; }
+  }
 
   const me = myTeam();
   const loggedIn = !!(auth && me);
