@@ -123,6 +123,23 @@ input[type=range]{width:100%;accent-color:var(--turf)}
 .rollnum{font-family:var(--mono);font-size:44px;font-weight:700;line-height:1}
 
 /* plinko */
+.sbhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.sbboard{display:flex;flex-direction:column;gap:10px}
+.sbgame{border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--bg)}
+.sbgame.done{opacity:.8}
+.sbmeta{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:6px;font-weight:600}
+.sbgrid{display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,1fr));gap:6px;align-items:center}
+.sbgrid .label{text-align:center;font-size:10px}
+.sbteam{font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sbb{background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;font-family:var(--mono);font-variant-numeric:tabular-nums;min-height:44px;justify-content:center}
+.sbb b{font-size:13px} .sbb span{font-size:12px;color:var(--amber)}
+.sbb.on{border-color:var(--amber);background:rgba(255,178,46,.12)}
+.sbb:disabled{opacity:.35;cursor:not-allowed}
+.sbscore{display:flex;justify-content:space-between;font-size:14px;padding:2px 0}
+.slip{border:1px solid var(--amber);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:8px;background:rgba(255,178,46,.06)}
+.slip > div:first-child{display:flex;flex-direction:column;gap:2px}
+.slip b#sbPick{font-family:var(--display);font-size:22px;text-transform:uppercase}
+.sbh{font-size:20px;font-weight:800}
 .felt{background:radial-gradient(ellipse at 50% 0%,#164a33,#0d2b1e 70%);border:1px solid #1f5a3e;border-radius:6px;padding:18px 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .dicepair{display:flex;gap:14px}
 .die{width:64px;height:64px;background:#f6f3ea;border-radius:12px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:9px;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 -3px 0 rgba(0,0,0,.12)}
@@ -233,6 +250,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <button role="tab" data-g="dice" aria-selected="false">Dice</button>
       <button role="tab" data-g="plinko" aria-selected="false">Plinko</button>
       <button role="tab" data-g="craps" aria-selected="false">Craps</button>
+      <button role="tab" data-g="sportsbook" aria-selected="false">Sportsbook</button>
     </nav>
 
     <!-- ROULETTE -->
@@ -310,6 +328,23 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <div class="betrow" data-bet="dice"></div>
       <div class="result" id="diRes"></div>
       <div class="rules">Rolls 0.00 to 99.99. Win if the roll lands under your number. Payout is 99 divided by your number, so the house keeps 1%.</div>
+    </div>
+
+    <!-- SPORTSBOOK -->
+    <div class="stage" data-game="sportsbook" hidden>
+      <div class="sbhead"><span class="label">NFL · DraftKings lines</span><span class="small" id="sbFresh"></span></div>
+      <div id="sbBoard" class="sbboard"><p class="empty">Loading this week's games…</p></div>
+      <div class="slip" id="sbSlip" hidden>
+        <div><span class="label">Your bet</span><b id="sbPick"></b><span class="small" id="sbGame"></span></div>
+        <div class="betrow" data-bet="sportsbook"></div>
+        <div class="small" id="sbToWin"></div>
+      </div>
+      <div class="result" id="sbRes"></div>
+      <div class="panel">
+        <h3 class="sbh">My bets</h3>
+        <ul class="feed" id="sbMine"><li class="empty">No bets yet.</li></ul>
+      </div>
+      <div class="rules">You're betting against the house at the DraftKings line shown, and the line and price lock when you place the bet. No max bet. Betting on a game closes at kickoff. Bets grade automatically within a few minutes of the final whistle: a win pays at the price you got, a push on the spread or total refunds your bet. Your bet comes out of your FAAB right away, so it counts in that Monday's Sleeper sync even if the game hasn't been played yet.</div>
     </div>
 
     <!-- CRAPS -->
@@ -399,7 +434,7 @@ const sfmt = n => (n > 0 ? "+" : "") + fmt(n);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const reduced = () => matchMedia("(prefers-reduced-motion:reduce)").matches;
 let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3600); }
-const GAME_NAMES = {roulette:"Roulette",blackjack:"Blackjack",slots:"Slots",dice:"Dice",plinko:"Plinko",craps:"Craps",rebate:"Loss rebate"};
+const GAME_NAMES = {roulette:"Roulette",blackjack:"Blackjack",slots:"Slots",dice:"Dice",plinko:"Plinko",craps:"Craps",sportsbook:"Sportsbook",rebate:"Loss rebate"};
 
 /* ---------- server ---------- */
 const H = {apikey: SUPABASE_KEY, "Content-Type": "application/json"};
@@ -477,8 +512,8 @@ $("pinForm").addEventListener("submit", async e => {
 $("logout").addEventListener("click", () => { auth = null; balance = null; try{ localStorage.removeItem("delts-auth"); }catch(e){} render(); });
 
 /* ---------- bet controls ---------- */
-const betVals = {roulette:100, blackjack:100, slots:50, dice:100, plinko:50, craps:100};
-const goLabels = {roulette:"Spin", blackjack:"Deal", slots:"Spin", dice:"Roll", plinko:"Drop", craps:"Shoot"};
+const betVals = {roulette:100, blackjack:100, slots:50, dice:100, plinko:50, craps:100, sportsbook:100};
+const goLabels = {roulette:"Spin", blackjack:"Deal", slots:"Spin", dice:"Roll", plinko:"Drop", craps:"Shoot", sportsbook:"Place bet"};
 document.querySelectorAll("[data-bet]").forEach(row => {
   const g = row.dataset.bet;
   row.innerHTML = `<input type="number" id="bet-${g}" min="1" step="1" inputmode="numeric" value="${betVals[g]}" aria-label="Bet amount">
@@ -490,7 +525,7 @@ document.querySelectorAll("[data-bet]").forEach(row => {
     let v = parseInt(inp.value) || 0;
     if(m === "half") v = Math.max(1, Math.floor(v/2));
     if(m === "dbl") v = v * 2;
-    if(m === "max") v = Math.max(1, Math.min(cfg?.max_bet || v, Math.floor(shownBal()), noLimit() ? Infinity : (cfg?.daily_limit || 0) - dayWagered()));
+    if(m === "max") v = Math.max(1, Math.min(g === "sportsbook" ? Infinity : (cfg?.max_bet || v), Math.floor(shownBal()), noLimit() ? Infinity : (cfg?.daily_limit || 0) - dayWagered()));
     inp.value = v;
   });
 });
@@ -519,6 +554,7 @@ $("tabs").addEventListener("click", e => {
   document.querySelectorAll("[data-game]").forEach(s => s.hidden = s.dataset.game !== g);
   try{ localStorage.setItem("delts-tab", g); }catch(e){}
   if(g === "plinko") drawPlinko();
+  if(g === "sportsbook") setTimeout(() => loadSportsbook(true));
 });
 try{ const t = localStorage.getItem("delts-tab"); if(t) document.querySelector(`#tabs [data-g="${t}"]`)?.click(); }catch(e){}
 
@@ -646,6 +682,81 @@ $("go-dice").addEventListener("click", async () => {
     showRes($("diRes"), bet, r.payout, "rolled " + roll.toFixed(2));
   } catch(e){ onAuthError(e); } finally { busy = false; refresh(); }
 });
+
+/* ---------- SPORTSBOOK ---------- */
+let sbGames = [], sbSel = null, sbBusy = false, sbLoaded = 0;
+const odds = p => p == null ? "" : (p > 0 ? "+" + p : String(p));
+const lineTxt = l => l == null ? "" : (l > 0 ? "+" + Number(l) : l == 0 ? "PK" : String(Number(l)));
+const toWin = (stake, p) => Math.floor(p > 0 ? stake * p / 100 : stake * 100 / Math.abs(p));
+const kick = iso => new Date(iso).toLocaleString("en-US", {timeZone:"America/New_York", weekday:"short", hour:"numeric", minute:"2-digit"});
+function sbBtn(g, market, pick, top, price){
+  const ok = g.open && price != null && (market === "ml" || top !== "");
+  const sel = sbSel && sbSel.game === g.id && sbSel.market === market && sbSel.pick === pick;
+  return `<button class="sbb${sel?" on":""}" ${ok?"":"disabled"} data-g="${g.id}" data-m="${market}" data-p="${pick}"><b>${top}</b><span>${odds(price)}</span></button>`;
+}
+function sbRender(){
+  const games = sbGames.filter(g => !g.final || new Date(g.kickoff) > Date.now() - 3*86400000);
+  if(!games.length){ $("sbBoard").innerHTML = `<p class="empty">No games on the board right now. Lines for next week usually post by Tuesday.</p>`; return; }
+  $("sbBoard").innerHTML = games.map(g => {
+    if(g.final || g.state !== "pre") return `<div class="sbgame done"><div class="sbmeta"><span>${esc(g.away)} @ ${esc(g.home)}</span><span class="small">${g.final ? "Final" : "Live"}</span></div>
+      <div class="sbscore"><span>${esc(g.away_name||g.away)}</span><b class="num">${g.away_score ?? ""}</b></div><div class="sbscore"><span>${esc(g.home_name||g.home)}</span><b class="num">${g.home_score ?? ""}</b></div></div>`;
+    return `<div class="sbgame"><div class="sbmeta"><span>${kick(g.kickoff)} ET</span>${g.open?"":'<span class="small">Lines refreshing</span>'}</div>
+      <div class="sbgrid"><span></span><span class="label">Spread</span><span class="label">Total</span><span class="label">Money</span>
+      <span class="sbteam">${esc(g.away_name||g.away)}</span>${sbBtn(g,"spread","away",lineTxt(g.spread_away),g.spread_away_price)}${sbBtn(g,"total","over",g.total!=null?"O "+Number(g.total):"",g.over_price)}${sbBtn(g,"ml","away","",g.ml_away)}
+      <span class="sbteam">${esc(g.home_name||g.home)}</span>${sbBtn(g,"spread","home",lineTxt(g.spread_home),g.spread_home_price)}${sbBtn(g,"total","under",g.total!=null?"U "+Number(g.total):"",g.under_price)}${sbBtn(g,"ml","home","",g.ml_home)}</div></div>`;
+  }).join("");
+}
+function sbSlip(){
+  const g = sbSel && sbGames.find(x => x.id === sbSel.game);
+  $("sbSlip").hidden = !g;
+  if(!g){ sbSel = null; return; }
+  const m = sbSel.market, p = sbSel.pick, team = p === "home" ? g.home : g.away;
+  const price = m === "ml" ? (p === "home" ? g.ml_home : g.ml_away) : m === "spread" ? (p === "home" ? g.spread_home_price : g.spread_away_price) : (p === "over" ? g.over_price : g.under_price);
+  const label = m === "ml" ? team + " to win" : m === "spread" ? team + " " + lineTxt(p === "home" ? g.spread_home : g.spread_away) : (p === "over" ? "Over " : "Under ") + Number(g.total);
+  sbSel.price = price;
+  $("sbPick").textContent = label + " (" + odds(price) + ")"; $("sbGame").textContent = g.away + " @ " + g.home + " · " + kick(g.kickoff) + " ET";
+  const st = getBet("sportsbook"); $("sbToWin").textContent = Number.isInteger(st) && st > 0 && price ? "To win " + fmt(toWin(st, price)) + " (returns " + fmt(st + toWin(st, price)) + ")" : "";
+}
+$("sbBoard").addEventListener("click", e => { const b = e.target.closest("button.sbb"); if(!b || b.disabled) return;
+  sbSel = {game: b.dataset.g, market: b.dataset.m, pick: b.dataset.p}; sbRender(); sbSlip(); render(); });
+$("bet-sportsbook").addEventListener("input", sbSlip);
+document.querySelector('[data-bet="sportsbook"]').addEventListener("click", () => setTimeout(sbSlip));
+async function loadSportsbook(force){
+  if(!force && Date.now() - sbLoaded < 30000) return;
+  sbLoaded = Date.now();
+  try {
+    const [games, st] = await Promise.all([view("v_sb_games"), view("v_sb_status")]);
+    sbGames = games; const ok = st[0]?.last_ok;
+    $("sbFresh").textContent = ok ? "Updated " + Math.max(0, Math.round((Date.now() - new Date(ok)) / 60000)) + " min ago" : "Waiting for the first update";
+    sbRender(); sbSlip(); render();
+  } catch(e){ $("sbBoard").innerHTML = `<p class="empty">The sportsbook isn't set up yet.</p>`; }
+  loadMyBets();
+}
+async function loadMyBets(){
+  if(!auth) return;
+  try {
+    const bets = await rpc("sb_my_bets", creds());
+    $("sbMine").innerHTML = bets.length ? bets.map(b => {
+      const what = b.market === "ml" ? b.team + " ML" : b.market === "spread" ? b.team + " " + lineTxt(b.line) : (b.pick === "over" ? "Over " : "Under ") + Number(b.line);
+      const out = b.status === "open" ? `<span class="num">to win ${fmt(b.toWin)}</span>` : b.status === "won" ? `<span class="num pos">+${fmt(b.payout - b.stake)}</span>` : b.status === "push" ? `<span class="num">push</span>` : `<span class="num neg">-${fmt(b.stake)}</span>`;
+      return `<li><span><b>${esc(what)}</b> (${odds(b.price)}) · ${fmt(b.stake)}</span>${out}<span class="d">${esc(b.game)} · ${b.status === "open" ? kick(b.kickoff) + " ET" : b.status}</span></li>`; }).join("")
+      : `<li class="empty">No bets yet.</li>`;
+  } catch(e){}
+}
+$("go-sportsbook").addEventListener("click", async () => {
+  if(sbBusy || !sbSel) return;
+  const bet = getBet("sportsbook"); const err = preCheck(bet); if(err) return toast(err);
+  sbBusy = true; busy = true;
+  try {
+    const r = await rpc("sb_place", {...creds(), p_game: sbSel.game, p_market: sbSel.market, p_pick: sbSel.pick, p_bet: bet});
+    balance = r.balance;
+    if(r.price !== sbSel.price) toast("The line moved to " + odds(r.price) + " before your bet went in.");
+    $("sbRes").className = "result push"; $("sbRes").textContent = "Bet placed · to win " + fmt(r.toWin);
+    sbSel = null; sbSlip(); loadSportsbook(true);
+  } catch(e){ onAuthError(e); loadSportsbook(true); }
+  finally { sbBusy = false; busy = false; refresh(); }
+});
+setInterval(() => { if(!document.hidden && !document.querySelector('[data-game="sportsbook"]').hidden) loadSportsbook(true); }, 60000);
 
 /* ---------- CRAPS ---------- */
 const PIPS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
@@ -804,6 +915,7 @@ function render(){
     $("dayBar").style.width = Math.min(100, dw/dl*100) + "%";
   } else { $("balBig").textContent = "$—"; $("whoLine").textContent = "Pick your team below"; $("meter").hidden = true; }
   ["roulette","slots","dice","plinko","craps"].forEach(g => { $("go-"+g).disabled = !isLive(); });
+  $("go-sportsbook").disabled = !isLive() || !sbSel;
   bjRender();
 
   if(teams.length){
