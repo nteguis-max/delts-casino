@@ -183,6 +183,7 @@ input[type=range]{width:100%;accent-color:var(--turf)}
 .mkb.on{border-color:var(--amber);background:rgba(255,178,46,.12)}
 .mkb:disabled{opacity:.35;cursor:not-allowed}
 .mkpick{font-size:15px}
+.mknote{border-left:3px solid var(--amber);padding:2px 0 2px 10px;margin:2px 0 4px}
 .felt{background:radial-gradient(ellipse at 50% 0%,#164a33,#0d2b1e 70%);border:1px solid #1f5a3e;border-radius:6px;padding:18px 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .dicepair{display:flex;gap:14px}
 .die{width:64px;height:64px;background:#f6f3ea;border-radius:12px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:9px;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 -3px 0 rgba(0,0,0,.12)}
@@ -396,7 +397,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
         <h3 class="sbh">My weather bets</h3>
         <ul class="feed" id="mkMine"><li class="empty">No bets yet.</li></ul>
       </div>
-      <div class="rules">Each range settles on the official National Weather Service high for that city and day, the same reading Kalshi uses. You buy Yes or No at Kalshi's current asking price: at 31¢, a $100 bet returns about $322 if it hits. Betting on a day closes at 10 PM Eastern the night before, and prices have to be between 5¢ and 95¢. Max bet is the casino max. Bets grade automatically when Kalshi posts the result, usually the next morning.</div>
+      <div class="rules">Kalshi cities settle on the official National Weather Service high for that city and day, the same reading Kalshi uses. Warroad is a house market priced from the NWS forecast and settles on Warroad airport's readings. You buy Yes or No at Kalshi's current asking price: at 31¢, a $100 bet returns about $322 if it hits. Betting on a day closes at 10 PM Eastern the night before, and prices have to be between 5¢ and 95¢. Max bet is the casino max ($250 on Warroad). Bets grade automatically when Kalshi posts the result, usually the next morning.</div>
     </div>
 
     <!-- SPORTSBOOK -->
@@ -491,6 +492,12 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <thead><tr><th>Team</th><th class="r">Sleeper base</th><th class="r">Unsettled</th><th class="r">Set Sleeper to</th><th class="r">Rebate</th><th class="r">Sleeper + rebate</th><th>PIN</th></tr></thead>
       <tbody id="cTable"></tbody>
     </table></div>
+    <form class="betrow" id="cWr" style="margin-top:12px" hidden>
+      <span class="small" style="width:100%">Warroad backup: if the airport station feed fails, settle a finished day by hand. Everyone sees that you entered it.</span>
+      <input id="cWrDay" type="date" aria-label="Day" style="background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:7px">
+      <input id="cWrHigh" type="number" placeholder="High °F" aria-label="Official high in °F" style="width:110px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:7px;font-family:var(--mono)">
+      <button class="go alt" type="submit" style="font-size:16px;padding:8px 14px">Settle Warroad</button>
+    </form>
     <div class="betrow" style="margin-top:12px">
       <button class="go alt" id="cBases" style="font-size:16px;padding:8px 14px">Save Sleeper bases</button>
       <button class="go" id="cSettle" style="font-size:16px;padding:8px 14px">Mark settled</button>
@@ -925,7 +932,7 @@ $("go-sportsbook").addEventListener("click", async () => {
 setInterval(() => { if(!document.hidden && !document.querySelector('[data-game="sportsbook"]').hidden) loadSportsbook(true); }, 60000);
 
 /* ---------- MARKETS (Kalshi weather) ---------- */
-let mkData = [], mkCity = null, mkDay = null, mkSel = null, mkBusy = false;
+let mkData = [], mkCity = null, mkDay = null, mkSel = null, mkBusy = false, wrInfo = [];
 try { mkCity = localStorage.getItem("delts-mkcity"); } catch(e){}
 const cents = p => p == null ? "—" : Math.round(p * 100) + "¢";
 const dayLbl = d => { const t = new Date(d + "T12:00:00"); return t.toLocaleDateString("en-US", {weekday:"short", month:"short", day:"numeric"}); };
@@ -942,8 +949,10 @@ function mkRender(){
     return `<button class="chip${d === mkDay ? " on" : ""}" data-day="${d}">${dayLbl(d)}<small>${settled ? " · settled" : open ? "" : " · closed"}</small></button>`; }).join("");
   const list = rows.filter(m => m.day === mkDay);
   const isOpen = list.some(m => m.open), cutoff = list[0]?.cutoff;
-  const head = isOpen ? `<p class="small">Betting closes ${new Date(cutoff).toLocaleString("en-US", {timeZone:"America/New_York", weekday:"short", hour:"numeric", minute:"2-digit"})} ET</p>`
-    : list.some(m => m.result) ? `<p class="small">Settled. The winning range is highlighted.</p>` : `<p class="small">Betting on this day is closed. Waiting for the official high.</p>`;
+  const house = list[0]?.source === "house", wi = house ? wrInfo.find(w => w.day === mkDay) : null;
+  const houseNote = house ? `<p class="small mknote">House market. Priced from the National Weather Service forecast${wi?.forecast_high != null ? ` (forecast high <b>${wi.forecast_high}°</b>)` : ""}, settles on the highest reading at Warroad's airport station (KRRT), midnight to midnight Central.${wi?.official_high != null ? ` Official high: <b>${wi.official_high}°</b>${wi.result_source === "entered by the commish" ? " (entered by the commish)" : ""}.` : ""} Max bet ${fmt(wi?.max_bet ?? wrInfo[0]?.max_bet ?? 250)}.</p>` : "";
+  const head = houseNote + (isOpen ? `<p class="small">Betting closes ${new Date(cutoff).toLocaleString("en-US", {timeZone:"America/New_York", weekday:"short", hour:"numeric", minute:"2-digit"})} ET</p>`
+    : list.some(m => m.result) ? `<p class="small">Settled. The winning range is highlighted.</p>` : list.some(m => m.status === "finalized") ? `<p class="small">Voided: the station didn't report enough readings that day. Every bet was refunded.</p>` : `<p class="small">Betting on this day is closed. Waiting for the official high.</p>`);
   const btn = (m, side) => { const p = side === "yes" ? m.yes_ask : m.no_ask, ok = m.open && p != null && p >= 0.05 && p <= 0.95, sel = mkSel && mkSel.ticker === m.ticker && mkSel.side === side;
     return `<button class="mkb ${side}${sel ? " on" : ""}" ${ok ? "" : "disabled"} data-t="${m.ticker}" data-s="${side}"><b>${side === "yes" ? "Yes" : "No"} ${cents(p)}</b><span>${ok ? (1 / p).toFixed(1) + "x" : ""}</span></button>`; };
   $("mkBoard").innerHTML = head + `<div class="mkrows">` + list.map(m => `<div class="mkrow${m.result === "yes" ? " hit" : ""}"><span class="mkrange">${esc(m.range_label || m.ticker)}${m.result === "yes" ? ' <small>✓ hit</small>' : ""}</span>${btn(m, "yes")}${btn(m, "no")}</div>`).join("") + `</div>`;
@@ -968,8 +977,8 @@ $("bet-markets").addEventListener("input", mkSlip);
 document.querySelector('[data-bet="markets"]').addEventListener("click", () => setTimeout(mkSlip));
 async function loadMarkets(){
   try {
-    const [rows, st] = await Promise.all([view("v_mk_markets"), view("v_mk_status")]);
-    mkData = rows; const ok = st[0]?.last_ok;
+    const [rows, st, wi] = await Promise.all([view("v_mk_markets"), view("v_mk_status"), view("v_wr_info").catch(() => [])]);
+    mkData = rows; wrInfo = wi; const ok = st[0]?.last_ok;
     $("mkFresh").textContent = ok ? "Updated " + Math.max(0, Math.round((Date.now() - new Date(ok)) / 60000)) + " min ago" : "Waiting for the first update";
     mkRender(); mkSlip();
   } catch(e){ $("mkBoard").innerHTML = `<p class="empty">Markets aren't set up yet.</p>`; }
@@ -1082,6 +1091,7 @@ async function loadAdmin(){
   $("cMax").value = cfg?.max_bet; $("cDay").value = noLimit() ? 0 : cfg?.daily_limit; $("cOpen").value = cfg?.open ? "1" : "0";
   const hasRebate = cfg && cfg.rebate_pct != null; $("cRebateWrap").hidden = !hasRebate; if(hasRebate) $("cRebate").value = cfg.rebate_pct;
   const hasCap = cfg && cfg.parlay_max_payout != null; $("cCapWrap").hidden = !hasCap; if(hasCap) $("cCap").value = cfg.parlay_max_payout;
+  $("cWr").hidden = false;
   const hasSgp = cfg && cfg.sgp_pct != null; $("cSgpWrap").hidden = !hasSgp; if(hasSgp) $("cSgp").value = cfg.sgp_pct;
   const owedTotal = overview.reduce((a,t) => a + (t.owed || 0), 0);
   $("cPay").hidden = !(owedTotal > 0); $("cPay").textContent = owedTotal > 0 ? "Pay rebates (" + fmt(owedTotal) + ")" : "Pay rebates";
@@ -1119,6 +1129,13 @@ $("cSettle").addEventListener("click", async () => {
   settleArmed = false; $("cConfirm").hidden = true;
   try { const r = await rpc("admin_settle", {p_pin: adminPin}); toast("Settled. Casino balances now match Sleeper." + (r && r.owed ? " " + fmt(r.owed) + " in rebates is owed after Wednesday's waivers." : (r && r.rebated ? " Paid " + fmt(r.rebated) + " in loss rebates." : ""))); await refresh(); await loadAdmin(); }
   catch(e){ toast(e.message); }
+});
+$("cWr").addEventListener("submit", async e => {
+  e.preventDefault();
+  const d = $("cWrDay").value, h = parseInt($("cWrHigh").value);
+  if(!d || !Number.isFinite(h)) return toast("Enter the day and the official high.");
+  try { await rpc("admin_wr_settle", {p_pin: adminPin, p_day: d, p_high: h}); toast("Warroad " + d + " settled at " + h + "°."); loadMarkets(); refresh(); }
+  catch(err){ toast(err.message); }
 });
 let payArmed = false;
 $("cPay").addEventListener("click", async () => {
