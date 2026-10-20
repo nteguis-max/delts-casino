@@ -62,7 +62,8 @@ create or replace view v_teams as
 create or replace view v_feed as
   select p.id, p.team_id, t.name, p.game, p.bet, p.payout, p.detail, p.created_at
   from plays p join teams t on t.id = p.team_id
-  order by p.created_at desc limit 40;
+  where p.created_at > now() - interval '24 hours'
+  order by p.created_at desc limit 1000;
 create or replace view v_config as
   select open, max_bet, daily_limit, last_settled,
     (extract(isodow from now() at time zone 'America/New_York') = 1 and extract(hour from now() at time zone 'America/New_York') >= 20)
