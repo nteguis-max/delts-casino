@@ -695,7 +695,7 @@ end $$;
 -- called by the scheduler: read finished fetches, then ask ESPN again
 create or replace function sb_poll() returns void
 language plpgsql security definer set search_path = public, extensions as $$
-declare r record; wk int; base text := 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
+declare r record; wk int; i int; base text := 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
 begin
   for r in select q.id, s.status_code, s.content from sb_requests q join net._http_response s on s.id = q.id where not q.done loop
     begin
@@ -717,10 +717,14 @@ begin
   for wk in select distinct g.week from sb_bets b join sb_games g on g.id = b.game_id where b.status = 'open' and not g.final and g.week is not null loop
     insert into sb_requests(id, url) values (net.http_get(base || '?seasontype=2&week=' || wk, timeout_milliseconds := 15000), base || '?week=' || wk);
   end loop;
-  -- next week's lines once they're posted
-  select max(week) + 1 into wk from sb_games where kickoff > now() - interval '7 days';
+  -- the next two weeks, so upcoming lines show up as soon as DraftKings posts them
+  select coalesce(max(week) filter (where kickoff <= now()), min(week) - 1) into wk from sb_games;
   if wk is not null then
-    insert into sb_requests(id, url) values (net.http_get(base || '?seasontype=2&week=' || wk, timeout_milliseconds := 15000), base || '?week=' || wk);
+    for i in 1 .. 2 loop
+      if wk + i <= 18 then
+        insert into sb_requests(id, url) values (net.http_get(base || '?seasontype=2&week=' || (wk + i), timeout_milliseconds := 15000), base || '?week=' || (wk + i));
+      end if;
+    end loop;
   end if;
 end $$;
 

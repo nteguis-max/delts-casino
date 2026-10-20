@@ -140,6 +140,8 @@ input[type=range]{width:100%;accent-color:var(--turf)}
 .slip > div:first-child{display:flex;flex-direction:column;gap:2px}
 .slip b#sbPick{font-family:var(--display);font-size:22px;text-transform:uppercase}
 .sbh{font-size:20px;font-weight:800}
+.sbboard .sbh{margin-top:6px}
+.sbtoggle{align-self:flex-start;margin-top:4px}
 .felt{background:radial-gradient(ellipse at 50% 0%,#164a33,#0d2b1e 70%);border:1px solid #1f5a3e;border-radius:6px;padding:18px 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .dicepair{display:flex;gap:14px}
 .die{width:64px;height:64px;background:#f6f3ea;border-radius:12px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:9px;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 -3px 0 rgba(0,0,0,.12)}
@@ -694,17 +696,26 @@ function sbBtn(g, market, pick, top, price){
   const sel = sbSel && sbSel.game === g.id && sbSel.market === market && sbSel.pick === pick;
   return `<button class="sbb${sel?" on":""}" ${ok?"":"disabled"} data-g="${g.id}" data-m="${market}" data-p="${pick}"><b>${top}</b><span>${odds(price)}</span></button>`;
 }
+function sbGameCard(g){
+  if(g.final || g.state !== "pre") return `<div class="sbgame done"><div class="sbmeta"><span>${esc(g.away)} @ ${esc(g.home)}</span><span class="small">${g.final ? "Final" : "Live"}</span></div>
+    <div class="sbscore"><span>${esc(g.away_name||g.away)}</span><b class="num">${g.away_score ?? ""}</b></div><div class="sbscore"><span>${esc(g.home_name||g.home)}</span><b class="num">${g.home_score ?? ""}</b></div></div>`;
+  return `<div class="sbgame"><div class="sbmeta"><span>${kick(g.kickoff)} ET</span>${g.open?"":'<span class="small">Lines refreshing</span>'}</div>
+    <div class="sbgrid"><span></span><span class="label">Spread</span><span class="label">Total</span><span class="label">Money</span>
+    <span class="sbteam">${esc(g.away_name||g.away)}</span>${sbBtn(g,"spread","away",lineTxt(g.spread_away),g.spread_away_price)}${sbBtn(g,"total","over",g.total!=null?"O "+Number(g.total):"",g.over_price)}${sbBtn(g,"ml","away","",g.ml_away)}
+    <span class="sbteam">${esc(g.home_name||g.home)}</span>${sbBtn(g,"spread","home",lineTxt(g.spread_home),g.spread_home_price)}${sbBtn(g,"total","under",g.total!=null?"U "+Number(g.total):"",g.under_price)}${sbBtn(g,"ml","home","",g.ml_home)}</div></div>`;
+}
+let sbShowResults = false;
 function sbRender(){
-  const games = sbGames.filter(g => !g.final || new Date(g.kickoff) > Date.now() - 3*86400000);
-  if(!games.length){ $("sbBoard").innerHTML = `<p class="empty">No games on the board right now. Lines for next week usually post by Tuesday.</p>`; return; }
-  $("sbBoard").innerHTML = games.map(g => {
-    if(g.final || g.state !== "pre") return `<div class="sbgame done"><div class="sbmeta"><span>${esc(g.away)} @ ${esc(g.home)}</span><span class="small">${g.final ? "Final" : "Live"}</span></div>
-      <div class="sbscore"><span>${esc(g.away_name||g.away)}</span><b class="num">${g.away_score ?? ""}</b></div><div class="sbscore"><span>${esc(g.home_name||g.home)}</span><b class="num">${g.home_score ?? ""}</b></div></div>`;
-    return `<div class="sbgame"><div class="sbmeta"><span>${kick(g.kickoff)} ET</span>${g.open?"":'<span class="small">Lines refreshing</span>'}</div>
-      <div class="sbgrid"><span></span><span class="label">Spread</span><span class="label">Total</span><span class="label">Money</span>
-      <span class="sbteam">${esc(g.away_name||g.away)}</span>${sbBtn(g,"spread","away",lineTxt(g.spread_away),g.spread_away_price)}${sbBtn(g,"total","over",g.total!=null?"O "+Number(g.total):"",g.over_price)}${sbBtn(g,"ml","away","",g.ml_away)}
-      <span class="sbteam">${esc(g.home_name||g.home)}</span>${sbBtn(g,"spread","home",lineTxt(g.spread_home),g.spread_home_price)}${sbBtn(g,"total","under",g.total!=null?"U "+Number(g.total):"",g.under_price)}${sbBtn(g,"ml","home","",g.ml_home)}</div></div>`;
-  }).join("");
+  const upcoming = sbGames.filter(g => g.state === "pre" && !g.final && new Date(g.kickoff) > Date.now());
+  const live = sbGames.filter(g => g.state === "in" && !g.final);
+  const done = sbGames.filter(g => g.final).sort((x,y) => new Date(y.kickoff) - new Date(x.kickoff));
+  const weeks = [...new Set(upcoming.map(g => g.week))].sort((x,y) => x - y);
+  let html = "";
+  if(live.length) html += `<h3 class="sbh">Live</h3>` + live.map(sbGameCard).join("");
+  if(weeks.length) weeks.forEach(w => { html += `<h3 class="sbh">Week ${w}</h3>` + upcoming.filter(g => g.week === w).map(sbGameCard).join(""); });
+  else html += `<p class="empty">No upcoming games with lines yet. They usually show up a few minutes after DraftKings posts them, often by Tuesday.</p>`;
+  if(done.length) html += `<button class="linkbtn sbtoggle" id="sbToggle">${sbShowResults ? "Hide" : "Show"} recent results (${done.length})</button>` + (sbShowResults ? done.map(sbGameCard).join("") : "");
+  $("sbBoard").innerHTML = html;
 }
 function sbSlip(){
   const g = sbSel && sbGames.find(x => x.id === sbSel.game);
@@ -717,7 +728,7 @@ function sbSlip(){
   $("sbPick").textContent = label + " (" + odds(price) + ")"; $("sbGame").textContent = g.away + " @ " + g.home + " · " + kick(g.kickoff) + " ET";
   const st = getBet("sportsbook"); $("sbToWin").textContent = Number.isInteger(st) && st > 0 && price ? "To win " + fmt(toWin(st, price)) + " (returns " + fmt(st + toWin(st, price)) + ")" : "";
 }
-$("sbBoard").addEventListener("click", e => { const b = e.target.closest("button.sbb"); if(!b || b.disabled) return;
+$("sbBoard").addEventListener("click", e => { if(e.target.id === "sbToggle"){ sbShowResults = !sbShowResults; sbRender(); return; } const b = e.target.closest("button.sbb"); if(!b || b.disabled) return;
   sbSel = {game: b.dataset.g, market: b.dataset.m, pick: b.dataset.p}; sbRender(); sbSlip(); render(); });
 $("bet-sportsbook").addEventListener("input", sbSlip);
 document.querySelector('[data-bet="sportsbook"]').addEventListener("click", () => setTimeout(sbSlip));
