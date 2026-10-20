@@ -58,10 +58,12 @@ h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.02e
 .closed-banner{background:#2a1418;border:1px solid #5a2129;color:#ffb3b8;padding:10px 12px;border-radius:6px;font-size:14px}
 
 /* tabs */
-.sections{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.sections{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
 .sections button{background:none;border:0;border-radius:5px;padding:10px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;color:var(--muted);text-align:left}
 .sections button b{font-family:var(--display);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:.03em;line-height:1}
 .sections button small{font-size:12px}
+@media (max-width:560px){.sections{gap:4px}.sections button{padding:9px 8px}.sections button b{font-size:16px}.sections button small{font-size:10.5px;line-height:1.2}}
+.sections button b,.sections button small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sections button[aria-pressed="true"]{background:var(--surface-2);color:var(--fg);box-shadow:inset 0 -3px 0 var(--turf)}
 .games{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:10px}
 @media (max-width:620px){.games{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -165,6 +167,22 @@ input[type=range]{width:100%;accent-color:var(--turf)}
 .tick .chip{padding:4px 10px;font-size:12px}
 .sbboard .sbh{margin-top:6px}
 .sbtoggle{align-self:flex-start;margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips .chip{border-radius:999px;padding:7px 12px}
+.chips .chip.on{border-color:var(--amber);color:var(--amber);background:rgba(255,178,46,.08)}
+.chips .chip small{color:var(--muted);font-weight:500}
+.mkboard{display:flex;flex-direction:column;gap:6px}
+.mkrows{display:flex;flex-direction:column;gap:6px}
+.mkrow{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,1fr);gap:6px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+.mkrow.hit{border-color:var(--win);background:rgba(79,220,142,.07)}
+.mkrange{font-weight:600;font-size:14px}
+.mkrange small{color:var(--win)}
+.mkb{background:var(--surface-2);border:1px solid var(--line);border-radius:4px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;font-family:var(--mono);font-variant-numeric:tabular-nums;min-height:44px;justify-content:center}
+.mkb b{font-size:13px} .mkb span{font-size:11px;color:var(--muted)}
+.mkb.yes b{color:var(--win)} .mkb.no b{color:var(--loss)}
+.mkb.on{border-color:var(--amber);background:rgba(255,178,46,.12)}
+.mkb:disabled{opacity:.35;cursor:not-allowed}
+.mkpick{font-size:15px}
 .felt{background:radial-gradient(ellipse at 50% 0%,#164a33,#0d2b1e 70%);border:1px solid #1f5a3e;border-radius:6px;padding:18px 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .dicepair{display:flex;gap:14px}
 .die{width:64px;height:64px;background:#f6f3ea;border-radius:12px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:9px;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 -3px 0 rgba(0,0,0,.12)}
@@ -273,6 +291,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
     <nav class="sections" aria-label="Sections">
       <button data-sec="casino" aria-pressed="true"><b>Casino</b><small>6 games</small></button>
       <button data-sec="sportsbook" aria-pressed="false"><b>Sportsbook</b><small>NFL lines &amp; parlays</small></button>
+      <button data-sec="markets" aria-pressed="false"><b>Markets</b><small>Weather on Kalshi</small></button>
     </nav>
     <nav class="games" role="tablist" id="tabs" aria-label="Casino games">
       <button role="tab" class="gtile" data-g="roulette" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/><path d="M12 3v5.8M12 15.2V21M3 12h5.8M15.2 12H21M5.6 5.6l4.1 4.1M14.3 14.3l4.1 4.1M18.4 5.6l-4.1 4.1M9.7 14.3l-4.1 4.1"/></svg><b>Roulette</b><small>Single zero · 35 to 1</small></button>
@@ -358,6 +377,26 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <div class="betrow" data-bet="dice"></div>
       <div class="result" id="diRes"></div>
       <div class="rules">Rolls 0.00 to 99.99. Win if the roll lands under your number. Payout is 99 divided by your number, so the house keeps 1%.</div>
+    </div>
+
+    <!-- MARKETS -->
+    <div class="stage" data-game="markets" hidden>
+      <div class="sbhead"><span class="label">Daily high temperature · Kalshi prices</span><span class="small" id="mkFresh"></span></div>
+      <div class="chips" id="mkCities"></div>
+      <div class="chips" id="mkDays"></div>
+      <div id="mkBoard" class="mkboard"><p class="empty">Loading markets…</p></div>
+      <div class="slip" id="mkSlip" hidden>
+        <div class="sliphead"><span class="label">Your bet</span><button class="linkbtn" id="mkClear">Clear</button></div>
+        <b class="mkpick" id="mkPick"></b>
+        <div class="betrow" data-bet="markets"></div>
+        <div class="small" id="mkToWin"></div>
+      </div>
+      <div class="result" id="mkRes"></div>
+      <div class="panel">
+        <h3 class="sbh">My weather bets</h3>
+        <ul class="feed" id="mkMine"><li class="empty">No bets yet.</li></ul>
+      </div>
+      <div class="rules">Each range settles on the official National Weather Service high for that city and day, the same reading Kalshi uses. You buy Yes or No at Kalshi's current asking price: at 31¢, a $100 bet returns about $322 if it hits. Betting on a day closes at 10 PM Eastern the night before, and prices have to be between 5¢ and 95¢. Max bet is the casino max. Bets grade automatically when Kalshi posts the result, usually the next morning.</div>
     </div>
 
     <!-- SPORTSBOOK -->
@@ -475,7 +514,7 @@ const sfmt = n => (n > 0 ? "+" : "") + fmt(n);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const reduced = () => matchMedia("(prefers-reduced-motion:reduce)").matches;
 let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3600); }
-const GAME_NAMES = {roulette:"Roulette",blackjack:"Blackjack",slots:"Slots",dice:"Dice",plinko:"Plinko",craps:"Craps",sportsbook:"Sportsbook",parlay:"Parlay",rebate:"Loss rebate"};
+const GAME_NAMES = {roulette:"Roulette",blackjack:"Blackjack",slots:"Slots",dice:"Dice",plinko:"Plinko",craps:"Craps",sportsbook:"Sportsbook",parlay:"Parlay",weather:"Weather",rebate:"Loss rebate"};
 
 /* ---------- server ---------- */
 const H = {apikey: SUPABASE_KEY, "Content-Type": "application/json"};
@@ -553,8 +592,8 @@ $("pinForm").addEventListener("submit", async e => {
 $("logout").addEventListener("click", () => { auth = null; balance = null; try{ localStorage.removeItem("delts-auth"); }catch(e){} render(); });
 
 /* ---------- bet controls ---------- */
-const betVals = {roulette:100, blackjack:100, slots:50, dice:100, plinko:50, craps:100, sportsbook:100};
-const goLabels = {roulette:"Spin", blackjack:"Deal", slots:"Spin", dice:"Roll", plinko:"Drop", craps:"Shoot", sportsbook:"Place bet"};
+const betVals = {roulette:100, blackjack:100, slots:50, dice:100, plinko:50, craps:100, sportsbook:100, markets:100};
+const goLabels = {roulette:"Spin", blackjack:"Deal", slots:"Spin", dice:"Roll", plinko:"Drop", craps:"Shoot", sportsbook:"Place bet", markets:"Place bet"};
 document.querySelectorAll("[data-bet]").forEach(row => {
   const g = row.dataset.bet;
   row.innerHTML = `<input type="number" id="bet-${g}" min="1" step="1" inputmode="numeric" value="${betVals[g]}" aria-label="Bet amount">
@@ -592,7 +631,7 @@ function showRes(el, b, p, extra){
 let lastCasino = "roulette";
 function selectGame(g){
   if(!document.querySelector(`[data-game="${g}"]`)) g = "roulette";
-  const sec = g === "sportsbook" ? "sportsbook" : "casino";
+  const sec = g === "sportsbook" ? "sportsbook" : g === "markets" ? "markets" : "casino";
   if(sec === "casino") lastCasino = g;
   document.querySelectorAll(".sections button").forEach(b => b.setAttribute("aria-pressed", b.dataset.sec === sec));
   $("tabs").hidden = sec !== "casino";
@@ -601,9 +640,10 @@ function selectGame(g){
   try{ localStorage.setItem("delts-tab", g); }catch(e){}
   if(g === "plinko") setTimeout(drawPlinko);
   if(g === "sportsbook") setTimeout(() => loadSportsbook(true));
+  if(g === "markets") setTimeout(() => loadMarkets(true));
 }
 $("tabs").addEventListener("click", e => { const b = e.target.closest(".gtile"); if(b) selectGame(b.dataset.g); });
-document.querySelector(".sections").addEventListener("click", e => { const b = e.target.closest("button[data-sec]"); if(b) selectGame(b.dataset.sec === "sportsbook" ? "sportsbook" : lastCasino); });
+document.querySelector(".sections").addEventListener("click", e => { const b = e.target.closest("button[data-sec]"); if(b) selectGame(b.dataset.sec === "casino" ? lastCasino : b.dataset.sec); });
 try{ const t = localStorage.getItem("delts-tab"); if(t) selectGame(t); }catch(e){}
 
 /* ---------- ROULETTE ---------- */
@@ -884,6 +924,79 @@ $("go-sportsbook").addEventListener("click", async () => {
 });
 setInterval(() => { if(!document.hidden && !document.querySelector('[data-game="sportsbook"]').hidden) loadSportsbook(true); }, 60000);
 
+/* ---------- MARKETS (Kalshi weather) ---------- */
+let mkData = [], mkCity = null, mkDay = null, mkSel = null, mkBusy = false;
+try { mkCity = localStorage.getItem("delts-mkcity"); } catch(e){}
+const cents = p => p == null ? "—" : Math.round(p * 100) + "¢";
+const dayLbl = d => { const t = new Date(d + "T12:00:00"); return t.toLocaleDateString("en-US", {weekday:"short", month:"short", day:"numeric"}); };
+function mkRender(){
+  const cities = [...new Map(mkData.map(m => [m.series, {series:m.series, city:m.city, sort:m.sort}])).values()].sort((a,b) => a.sort - b.sort);
+  if(!cities.length){ $("mkCities").innerHTML = ""; $("mkDays").innerHTML = ""; $("mkBoard").innerHTML = `<p class="empty">No weather markets yet. They show up a few minutes after the first update.</p>`; return; }
+  if(!cities.some(c => c.series === mkCity)) mkCity = cities[0].series;
+  $("mkCities").innerHTML = cities.map(c => `<button class="chip${c.series === mkCity ? " on" : ""}" data-city="${c.series}">${esc(c.city)}</button>`).join("");
+  const rows = mkData.filter(m => m.series === mkCity);
+  const days = [...new Set(rows.map(m => m.day))].sort();
+  const openDays = days.filter(d => rows.some(m => m.day === d && m.open));
+  if(!days.includes(mkDay)) mkDay = openDays[0] || days[days.length - 1];
+  $("mkDays").innerHTML = days.map(d => { const settled = rows.some(m => m.day === d && m.result); const open = openDays.includes(d);
+    return `<button class="chip${d === mkDay ? " on" : ""}" data-day="${d}">${dayLbl(d)}<small>${settled ? " · settled" : open ? "" : " · closed"}</small></button>`; }).join("");
+  const list = rows.filter(m => m.day === mkDay);
+  const isOpen = list.some(m => m.open), cutoff = list[0]?.cutoff;
+  const head = isOpen ? `<p class="small">Betting closes ${new Date(cutoff).toLocaleString("en-US", {timeZone:"America/New_York", weekday:"short", hour:"numeric", minute:"2-digit"})} ET</p>`
+    : list.some(m => m.result) ? `<p class="small">Settled. The winning range is highlighted.</p>` : `<p class="small">Betting on this day is closed. Waiting for the official high.</p>`;
+  const btn = (m, side) => { const p = side === "yes" ? m.yes_ask : m.no_ask, ok = m.open && p != null && p >= 0.05 && p <= 0.95, sel = mkSel && mkSel.ticker === m.ticker && mkSel.side === side;
+    return `<button class="mkb ${side}${sel ? " on" : ""}" ${ok ? "" : "disabled"} data-t="${m.ticker}" data-s="${side}"><b>${side === "yes" ? "Yes" : "No"} ${cents(p)}</b><span>${ok ? (1 / p).toFixed(1) + "x" : ""}</span></button>`; };
+  $("mkBoard").innerHTML = head + `<div class="mkrows">` + list.map(m => `<div class="mkrow${m.result === "yes" ? " hit" : ""}"><span class="mkrange">${esc(m.range_label || m.ticker)}${m.result === "yes" ? ' <small>✓ hit</small>' : ""}</span>${btn(m, "yes")}${btn(m, "no")}</div>`).join("") + `</div>`;
+}
+function mkSlip(){
+  const m = mkSel && mkData.find(x => x.ticker === mkSel.ticker);
+  if(m && !m.open) mkSel = null;
+  $("mkSlip").hidden = !mkSel;
+  if(!mkSel){ $("go-markets").disabled = true; return; }
+  const p = mkSel.side === "yes" ? m.yes_ask : m.no_ask; mkSel.price = p;
+  $("mkPick").textContent = `${m.city} high ${dayLbl(m.day)} · ${mkSel.side === "yes" ? "Yes" : "No"}: ${m.range_label} at ${cents(p)}`;
+  const st = getBet("markets");
+  $("mkToWin").textContent = Number.isInteger(st) && st > 0 ? "To win " + fmt(Math.floor(st / p) - st) + " (returns " + fmt(Math.floor(st / p)) + ")" : "";
+  $("go-markets").disabled = !isLive();
+}
+$("mkCities").addEventListener("click", e => { const b = e.target.closest("[data-city]"); if(!b) return; mkCity = b.dataset.city; mkDay = null; mkSel = null; try{ localStorage.setItem("delts-mkcity", mkCity); }catch(e){} mkRender(); mkSlip(); });
+$("mkDays").addEventListener("click", e => { const b = e.target.closest("[data-day]"); if(!b) return; mkDay = b.dataset.day; mkSel = null; mkRender(); mkSlip(); });
+$("mkBoard").addEventListener("click", e => { const b = e.target.closest("button.mkb"); if(!b || b.disabled) return;
+  mkSel = (mkSel && mkSel.ticker === b.dataset.t && mkSel.side === b.dataset.s) ? null : {ticker: b.dataset.t, side: b.dataset.s}; $("mkRes").textContent = ""; mkRender(); mkSlip(); });
+$("mkClear").addEventListener("click", () => { mkSel = null; mkRender(); mkSlip(); });
+$("bet-markets").addEventListener("input", mkSlip);
+document.querySelector('[data-bet="markets"]').addEventListener("click", () => setTimeout(mkSlip));
+async function loadMarkets(){
+  try {
+    const [rows, st] = await Promise.all([view("v_mk_markets"), view("v_mk_status")]);
+    mkData = rows; const ok = st[0]?.last_ok;
+    $("mkFresh").textContent = ok ? "Updated " + Math.max(0, Math.round((Date.now() - new Date(ok)) / 60000)) + " min ago" : "Waiting for the first update";
+    mkRender(); mkSlip();
+  } catch(e){ $("mkBoard").innerHTML = `<p class="empty">Markets aren't set up yet.</p>`; }
+  if(!auth) return;
+  try {
+    const bets = await rpc("mk_my_bets", creds());
+    $("mkMine").innerHTML = bets.length ? bets.map(b => {
+      const out = b.status === "open" ? `<span class="num">to win ${fmt(b.toWin)}</span>` : b.status === "won" ? `<span class="num pos">+${fmt(b.payout - b.stake)}</span>` : b.status === "void" ? `<span class="num">refunded</span>` : `<span class="num neg">-${fmt(b.stake)}</span>`;
+      return `<li><span><b>${esc(b.city)} ${dayLbl(b.day)}</b> · ${b.side === "yes" ? "Yes" : "No"} ${esc(b.range)} @ ${cents(b.price)} · ${fmt(b.stake)}</span>${out}<span class="d">${b.status}</span></li>`; }).join("")
+      : `<li class="empty">No bets yet.</li>`;
+  } catch(e){}
+}
+$("go-markets").addEventListener("click", async () => {
+  if(mkBusy || !mkSel) return;
+  const bet = getBet("markets"); const err = preCheck(bet); if(err) return toast(err);
+  mkBusy = true; busy = true;
+  try {
+    const r = await rpc("mk_place", {...creds(), p_ticker: mkSel.ticker, p_side: mkSel.side, p_bet: bet});
+    balance = r.balance;
+    if(Math.abs(r.price - mkSel.price) > 0.0001) toast("The price moved to " + cents(r.price) + " before your bet went in.");
+    $("mkRes").className = "result push"; $("mkRes").textContent = "Bet placed · to win " + fmt(r.toWin);
+    mkSel = null;
+  } catch(e){ onAuthError(e); }
+  finally { mkBusy = false; busy = false; loadMarkets(); refresh(); }
+});
+setInterval(() => { if(!document.hidden && !document.querySelector('[data-game="markets"]').hidden) loadMarkets(); }, 60000);
+
 /* ---------- CRAPS ---------- */
 const PIPS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 function drawDie(el, n){ el.innerHTML = Array.from({length:9}, (_,i) => `<i${PIPS[n].includes(i)?' class="p"':''}></i>`).join(""); el.setAttribute("aria-label", "Die showing " + n); }
@@ -1046,6 +1159,7 @@ function render(){
   } else { $("balBig").textContent = "$—"; $("whoLine").textContent = "Pick your team below"; $("meter").hidden = true; }
   ["roulette","slots","dice","plinko","craps"].forEach(g => { $("go-"+g).disabled = !isLive(); });
   $("go-sportsbook").disabled = !isLive() || !sbPicks.length;
+  $("go-markets").disabled = !isLive() || !mkSel;
   bjRender();
 
   if(teams.length){
