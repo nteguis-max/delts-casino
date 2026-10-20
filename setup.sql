@@ -63,7 +63,8 @@ create or replace view v_feed as
 create or replace view v_config as
   select open, max_bet, daily_limit, last_settled,
     (extract(isodow from now() at time zone 'America/New_York') = 1 and extract(hour from now() at time zone 'America/New_York') >= 20)
-    or (extract(isodow from now() at time zone 'America/New_York') = 2 and extract(hour from now() at time zone 'America/New_York') < 6) as blackout
+    or extract(isodow from now() at time zone 'America/New_York') = 2
+    or (extract(isodow from now() at time zone 'America/New_York') = 3 and extract(hour from now() at time zone 'America/New_York') < 3) as blackout
   from config;
 grant select on v_teams, v_feed, v_config to anon, authenticated;
 
@@ -73,7 +74,8 @@ create or replace function _rnd(n int) returns int language sql volatile as $$
 
 create or replace function _blackout() returns boolean language sql stable as $$
   select (extract(isodow from now() at time zone 'America/New_York') = 1 and extract(hour from now() at time zone 'America/New_York') >= 20)
-      or (extract(isodow from now() at time zone 'America/New_York') = 2 and extract(hour from now() at time zone 'America/New_York') < 6) $$;
+      or extract(isodow from now() at time zone 'America/New_York') = 2
+      or (extract(isodow from now() at time zone 'America/New_York') = 3 and extract(hour from now() at time zone 'America/New_York') < 3) $$;
 
 create or replace function _auth(p_team int, p_pin text) returns teams
 language plpgsql security definer set search_path = public, extensions as $$
@@ -101,7 +103,7 @@ declare c config;
 begin
   select * into c from config where id = 1;
   if not c.open then raise exception 'The casino is closed right now.'; end if;
-  if _blackout() then raise exception 'Betting is closed from 8 PM Monday until waivers clear at 6 AM Tuesday (Eastern).'; end if;
+  if _blackout() then raise exception 'Betting is closed from 8 PM Monday until waivers clear at 3 AM Wednesday (Eastern).'; end if;
   if p_bet is null or p_bet < 10 then raise exception 'Minimum bet is $10.'; end if;
   if p_capped and p_bet > c.max_bet then raise exception 'Max bet is $%.', c.max_bet; end if;
   if p_bet > t.base + t.net - t.settled then raise exception 'You don''t have that much FAAB.'; end if;
@@ -473,7 +475,8 @@ end $$;
 create or replace view v_config as
   select open, max_bet, daily_limit, last_settled,
     (extract(isodow from now() at time zone 'America/New_York') = 1 and extract(hour from now() at time zone 'America/New_York') >= 20)
-    or (extract(isodow from now() at time zone 'America/New_York') = 2 and extract(hour from now() at time zone 'America/New_York') < 6) as blackout,
+    or extract(isodow from now() at time zone 'America/New_York') = 2
+    or (extract(isodow from now() at time zone 'America/New_York') = 3 and extract(hour from now() at time zone 'America/New_York') < 3) as blackout,
     rebate_pct
   from config;
 grant select on v_config to anon, authenticated;
@@ -508,7 +511,7 @@ end $$;
 
 -- ---------- rebates pay out after waivers ----------
 -- Monday: Mark settled syncs casino results and records each loser's rebate as owed.
--- Tuesday after 6 AM ET: Pay rebates credits them, so nobody can use a rebate in that week's waivers.
+-- Wednesday after 3 AM ET: Pay rebates credits them, so nobody can use a rebate in that week's waivers.
 create table if not exists pending_rebates (
   team_id int not null references teams(id),
   amount int not null,
@@ -547,12 +550,12 @@ language plpgsql security definer set search_path = public as $$
 declare r record; pct int; paid int := 0;
 begin
   if not _admin(p_pin) then return json_build_object('error', 'Wrong commish PIN'); end if;
-  -- only after the Tuesday 6 AM ET waiver run that follows the settle
+  -- only after the Wednesday 3 AM ET waiver run that follows the settle
   if exists (select 1 from pending_rebates p,
-               lateral (select date_trunc('week', p.created_at at time zone 'America/New_York') + interval '1 day 6 hours' as tue) w
+               lateral (select date_trunc('week', p.created_at at time zone 'America/New_York') + interval '2 days 3 hours' as tue) w
              where (case when w.tue > (p.created_at at time zone 'America/New_York') then w.tue else w.tue + interval '7 days' end)
                    at time zone 'America/New_York' > now()) then
-    raise exception 'Rebates pay out after waivers clear at 6 AM Tuesday.';
+    raise exception 'Rebates pay out after waivers clear at 3 AM Wednesday.';
   end if;
   select rebate_pct into pct from config where id = 1;
   for r in select team_id, sum(amount)::int amt from pending_rebates group by team_id loop

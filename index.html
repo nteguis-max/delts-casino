@@ -370,7 +370,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
     </div>
     <div class="small" id="cSteps">
       <p><b>Monday, before 8 PM:</b> in Sleeper (Commissioner tools, edit FAAB budgets), set each team to its "Set Sleeper to" number, then press Mark settled. That locks in this week's rebates as owed.</p>
-      <p><b>Tuesday, after waivers clear:</b> type each team's new Sleeper FAAB into "Sleeper base" and press Save Sleeper bases. Then set each team that's owed a rebate to its "Sleeper + rebate" number in Sleeper, and press Pay rebates.</p>
+      <p><b>Wednesday, after waivers clear at 3 AM:</b> type each team's new Sleeper FAAB into "Sleeper base" and press Save Sleeper bases. Then set each team that's owed a rebate to its "Sleeper + rebate" number in Sleeper, and press Pay rebates.</p>
     </div>
     <div class="scroll"><table>
       <thead><tr><th>Team</th><th class="r">Sleeper base</th><th class="r">Unsettled</th><th class="r">Set Sleeper to</th><th class="r">Rebate</th><th class="r">Sleeper + rebate</th><th>PIN</th></tr></thead>
@@ -498,7 +498,7 @@ const getBet = g => parseInt($("bet-" + g).value);
 function preCheck(bet){
   if(!auth) return "Pick your team first.";
   if(!cfg?.open) return "The casino is closed right now.";
-  if(cfg.blackout) return "Betting is closed from 8 PM Monday until waivers clear at 6 AM Tuesday (Eastern).";
+  if(cfg.blackout) return "Betting is closed from 8 PM Monday until waivers clear at 3 AM Wednesday (Eastern).";
   if(!Number.isInteger(bet) || bet < 1) return "Minimum bet is $10.";
   return null;  // the server checks the rest
 }
@@ -763,7 +763,7 @@ $("cBases").addEventListener("click", async () => {
 $("cSettle").addEventListener("click", async () => {
   if(!settleArmed){ settleArmed = true; $("cConfirm").hidden = false; setTimeout(() => { settleArmed = false; $("cConfirm").hidden = true; }, 5000); return; }
   settleArmed = false; $("cConfirm").hidden = true;
-  try { const r = await rpc("admin_settle", {p_pin: adminPin}); toast("Settled. Casino balances now match Sleeper." + (r && r.owed ? " " + fmt(r.owed) + " in rebates is owed after Tuesday's waivers." : (r && r.rebated ? " Paid " + fmt(r.rebated) + " in loss rebates." : ""))); await refresh(); await loadAdmin(); }
+  try { const r = await rpc("admin_settle", {p_pin: adminPin}); toast("Settled. Casino balances now match Sleeper." + (r && r.owed ? " " + fmt(r.owed) + " in rebates is owed after Wednesday's waivers." : (r && r.rebated ? " Paid " + fmt(r.rebated) + " in loss rebates." : ""))); await refresh(); await loadAdmin(); }
   catch(e){ toast(e.message); }
 });
 let payArmed = false;
@@ -784,7 +784,7 @@ function render(){
   if(cfg){
     const h=$("hours"); h.hidden=false;
     if(!cfg.open){ h.className="hours closed"; $("hoursMain").textContent="Casino closed"; $("hoursSub").textContent="The commish has paused betting."; }
-    else if(cfg.blackout){ h.className="hours closed"; $("hoursMain").textContent="Closed for MNF and waivers"; $("hoursSub").textContent="Reopens Tuesday 6 AM ET"; }
+    else if(cfg.blackout){ h.className="hours closed"; $("hoursMain").textContent="Closed for MNF and waivers"; $("hoursSub").textContent="Reopens Wednesday 3 AM ET"; }
     else { h.className="hours open"; $("hoursMain").textContent="Open"; $("hoursSub").textContent="Closes Monday 8 PM ET for MNF and waivers · $10 min bet"; }
   }
 
@@ -810,7 +810,7 @@ function render(){
     const bank = -teams.reduce((a,t) => a + t.net, 0), bankU = -teams.reduce((a,t) => a + t.unsettled, 0);
     $("bankAll").textContent = fmt(bank);
     if(cfg && cfg.rebate_pct != null){ $("bankNote").hidden = false; $("bankNote").textContent = cfg.rebate_pct > 0
-      ? `Every Tuesday after waivers clear, ${cfg.rebate_pct}% of the week's bank goes back to the teams that finished the week down, split by how much each lost.`
+      ? `Every Wednesday after waivers clear, ${cfg.rebate_pct}% of the week's bank goes back to the teams that finished the week down, split by how much each lost.`
       : "Lost FAAB stays in the bank."; }
     $("bankUnset").textContent = bankU ? sfmt(bankU) + " since last settle" : "";
     $("lb").innerHTML = [...teams].sort((a,b) => b.net - a.net).map(t => `<tr class="${t.id===auth?.team?"me":""}"><td class="tname">${esc(t.name)}<small>@${esc(t.owner)}</small></td>
