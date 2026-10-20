@@ -292,7 +292,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
     <nav class="sections" aria-label="Sections">
       <button data-sec="casino" aria-pressed="true"><b>Casino</b><small>6 games</small></button>
       <button data-sec="sportsbook" aria-pressed="false"><b>Sportsbook</b><small>NFL lines &amp; parlays</small></button>
-      <button data-sec="markets" aria-pressed="false"><b>Markets</b><small>Weather on Kalshi</small></button>
+      <button data-sec="markets" aria-pressed="false"><b>Markets</b></button>
     </nav>
     <nav class="games" role="tablist" id="tabs" aria-label="Casino games">
       <button role="tab" class="gtile" data-g="roulette" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/><path d="M12 3v5.8M12 15.2V21M3 12h5.8M15.2 12H21M5.6 5.6l4.1 4.1M14.3 14.3l4.1 4.1M18.4 5.6l-4.1 4.1M9.7 14.3l-4.1 4.1"/></svg><b>Roulette</b><small>Single zero · 35 to 1</small></button>
@@ -382,7 +382,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
 
     <!-- MARKETS -->
     <div class="stage" data-game="markets" hidden>
-      <div class="sbhead"><span class="label">Daily high temperature · Kalshi prices</span><span class="small" id="mkFresh"></span></div>
+      <div class="sbhead"><span class="label">Weather · daily high temperature</span><span class="small" id="mkFresh"></span></div>
       <div class="chips" id="mkCities"></div>
       <div class="chips" id="mkDays"></div>
       <div id="mkBoard" class="mkboard"><p class="empty">Loading markets…</p></div>
@@ -397,7 +397,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
         <h3 class="sbh">My weather bets</h3>
         <ul class="feed" id="mkMine"><li class="empty">No bets yet.</li></ul>
       </div>
-      <div class="rules">Kalshi cities settle on the official National Weather Service high for that city and day, the same reading Kalshi uses. Warroad is a house market priced from the NWS forecast and settles on Warroad airport's readings. You buy Yes or No at Kalshi's current asking price: at 31¢, a $100 bet returns about $322 if it hits. Betting on a day closes at 10 PM Eastern the night before, and prices have to be between 5¢ and 95¢. Max bet is the casino max ($250 on Warroad). Bets grade automatically when Kalshi posts the result, usually the next morning.</div>
+      <div class="rules">Each range settles on that city's official high temperature for the day from the National Weather Service. Warroad is a house market priced from the NWS forecast and settles on Warroad airport's readings. You buy Yes or No at the price shown: at 31¢, a $100 bet returns about $322 if it hits. Betting on a day closes at 10 PM Eastern the night before, and prices have to be between 5¢ and 95¢. Max bet is the casino max ($250 on Warroad). Bets grade automatically once the official high is in, usually the next morning.</div>
     </div>
 
     <!-- SPORTSBOOK -->
@@ -931,7 +931,7 @@ $("go-sportsbook").addEventListener("click", async () => {
 });
 setInterval(() => { if(!document.hidden && !document.querySelector('[data-game="sportsbook"]').hidden) loadSportsbook(true); }, 60000);
 
-/* ---------- MARKETS (Kalshi weather) ---------- */
+/* ---------- MARKETS ---------- */
 let mkData = [], mkCity = null, mkDay = null, mkSel = null, mkBusy = false, wrInfo = [];
 try { mkCity = localStorage.getItem("delts-mkcity"); } catch(e){}
 const cents = p => p == null ? "—" : Math.round(p * 100) + "¢";
