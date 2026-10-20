@@ -58,11 +58,11 @@ h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.02e
 .closed-banner{background:#2a1418;border:1px solid #5a2129;color:#ffb3b8;padding:10px 12px;border-radius:6px;font-size:14px}
 
 /* tabs */
-.sections{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.sections{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
 .sections button{background:none;border:0;border-radius:5px;padding:10px 12px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;color:var(--muted);text-align:left}
 .sections button b{font-family:var(--display);font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:.03em;line-height:1}
 .sections button small{font-size:12px}
-@media (max-width:560px){.sections{gap:4px}.sections button{padding:9px 8px}.sections button b{font-size:16px}.sections button small{font-size:10.5px;line-height:1.2}}
+@media (max-width:560px){.sections{gap:4px;grid-template-columns:repeat(2,minmax(0,1fr))}.sections button{padding:9px 8px}.sections button b{font-size:16px}.sections button small{font-size:10.5px;line-height:1.2}}
 .sections button b,.sections button small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sections button[aria-pressed="true"]{background:var(--surface-2);color:var(--fg);box-shadow:inset 0 -3px 0 var(--turf)}
 .games{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-top:10px}
@@ -205,6 +205,18 @@ input[type=range]{width:100%;accent-color:var(--turf)}
 .lane.hit{background:repeating-linear-gradient(180deg,#4a2226 0 18px,#552a2e 18px 20px)}
 .chick{font-size:34px;line-height:1;margin-bottom:46px}
 #ckActs .go{flex:1}
+.sttotals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.sttotals{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.sttotals div{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.sttotals b{font-size:18px}
+.awards{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.award{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.award b{font-size:15px;overflow-wrap:anywhere}
+.award .big{font-size:22px;font-weight:700;color:var(--amber)}
+.award.good .big{color:var(--win)} .award.bad .big{color:var(--loss)}
+.award .small{overflow-wrap:anywhere}
+.sttable td,.sttable th{white-space:nowrap}
+.recap{white-space:pre-wrap;font-family:var(--mono);font-size:12.5px;line-height:1.5;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:12px;margin:0;overflow-wrap:anywhere;max-height:420px;overflow-y:auto}
 .felt{background:radial-gradient(ellipse at 50% 0%,#164a33,#0d2b1e 70%);border:1px solid #1f5a3e;border-radius:6px;padding:18px 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .dicepair{display:flex;gap:14px}
 .die{width:64px;height:64px;background:#f6f3ea;border-radius:12px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:9px;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 -3px 0 rgba(0,0,0,.12)}
@@ -314,6 +326,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <button data-sec="casino" aria-pressed="true"><b>Casino</b><small>8 games</small></button>
       <button data-sec="sportsbook" aria-pressed="false"><b>Sportsbook</b><small>NFL lines &amp; parlays</small></button>
       <button data-sec="markets" aria-pressed="false"><b>Markets</b></button>
+      <button data-sec="stats" aria-pressed="false"><b>Stats</b><small>Leaderboard &amp; recap</small></button>
     </nav>
     <nav class="games" role="tablist" id="tabs" aria-label="Casino games">
       <button role="tab" class="gtile" data-g="roulette" aria-selected="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.2"/><path d="M12 3v5.8M12 15.2V21M3 12h5.8M15.2 12H21M5.6 5.6l4.1 4.1M14.3 14.3l4.1 4.1M18.4 5.6l-4.1 4.1M9.7 14.3l-4.1 4.1"/></svg><b>Roulette</b><small>Single zero · 35 to 1</small></button>
@@ -401,6 +414,32 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <div class="betrow" data-bet="dice"></div>
       <div class="result" id="diRes"></div>
       <div class="rules">Rolls 0.00 to 99.99. Win if the roll lands under your number. Payout is 99 divided by your number, so the house keeps 1%.</div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stage" data-game="stats" hidden>
+      <div class="sbhead"><div class="chips" id="stPeriod"><button class="chip on" data-p="week">This week</button><button class="chip" data-p="all">All time</button></div><span class="small" id="stSince"></span></div>
+      <div class="sttotals" id="stTotals"></div>
+      <div class="awards" id="stAwards"><p class="empty">Loading…</p></div>
+      <div class="panel">
+        <h3 class="sbh">Leaderboard</h3>
+        <div class="scroll"><table class="sttable">
+          <thead><tr><th>#</th><th>Team</th><th class="r">Net</th><th class="r">Wagered</th><th class="r">Bets</th><th class="r">Best hit</th><th>Favorite</th></tr></thead>
+          <tbody id="stBoard"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <h3 class="sbh">By game</h3>
+        <div class="scroll"><table class="sttable">
+          <thead><tr><th>Game</th><th class="r">Bets</th><th class="r">Players</th><th class="r">Wagered</th><th class="r">House result</th></tr></thead>
+          <tbody id="stGames"></tbody>
+        </table></div>
+      </div>
+      <div class="panel">
+        <div class="sbhead"><h3 class="sbh">Recap card</h3><button class="go alt" id="stCopy" style="font-size:16px;padding:8px 14px">Copy recap</button></div>
+        <pre class="recap" id="stRecap" tabindex="0"></pre>
+        <p class="small">Paste it straight into the group chat. "This week" means everything since the commish's last Monday settle.</p>
+      </div>
     </div>
 
     <!-- MARKETS -->
@@ -690,7 +729,7 @@ function showRes(el, b, p, extra){
 let lastCasino = "roulette";
 function selectGame(g){
   if(!document.querySelector(`[data-game="${g}"]`)) g = "roulette";
-  const sec = g === "sportsbook" ? "sportsbook" : g === "markets" ? "markets" : "casino";
+  const sec = ["sportsbook","markets","stats"].includes(g) ? g : "casino";
   if(sec === "casino") lastCasino = g;
   document.querySelectorAll(".sections button").forEach(b => b.setAttribute("aria-pressed", b.dataset.sec === sec));
   $("tabs").hidden = sec !== "casino";
@@ -702,6 +741,7 @@ function selectGame(g){
   if(g === "chicken") setTimeout(loadChicken);
   if(g === "sportsbook") setTimeout(() => loadSportsbook(true));
   if(g === "markets") setTimeout(() => loadMarkets(true));
+  if(g === "stats") setTimeout(() => loadStats());
 }
 $("tabs").addEventListener("click", e => { const b = e.target.closest(".gtile"); if(b) selectGame(b.dataset.g); });
 document.querySelector(".sections").addEventListener("click", e => { const b = e.target.closest("button[data-sec]"); if(b) selectGame(b.dataset.sec === "casino" ? lastCasino : b.dataset.sec); });
@@ -984,6 +1024,70 @@ $("go-sportsbook").addEventListener("click", async () => {
   finally { sbBusy = false; busy = false; refresh(); }
 });
 setInterval(() => { if(!document.hidden && !document.querySelector('[data-game="sportsbook"]').hidden) loadSportsbook(true); }, 60000);
+
+/* ---------- STATS ---------- */
+let stPeriod = "week", stData = null;
+const SITE = "https://nteguis-max.github.io/delts-casino/";
+const gname = g => GAME_NAMES[g] || (g ? g[0].toUpperCase() + g.slice(1) : "");
+const sinceLbl = iso => iso ? new Date(iso).toLocaleDateString("en-US", {timeZone:"America/New_York", weekday:"short", month:"short", day:"numeric"}) : null;
+function award(title, who, big, sub, tone){
+  return `<div class="award ${tone||""}"><span class="label">${title}</span><b>${esc(who)}</b><span class="num big">${big}</span>${sub ? `<span class="small">${esc(sub)}</span>` : ""}</div>`;
+}
+function stRender(){
+  const d = stData; if(!d) return;
+  const since = sinceLbl(d.since);
+  $("stSince").textContent = d.period === "week" ? (since ? "Since the " + since + " settle" : "Since launch (no settle yet)") : "Since launch";
+  const t = d.totals;
+  $("stTotals").innerHTML = `<div><span class="label">Bets</span><b class="num">${Number(t.bets).toLocaleString("en-US")}</b></div><div><span class="label">Wagered</span><b class="num">${fmt(t.wagered)}</b></div><div><span class="label">House result</span><b class="num ${t.house>0?"pos":t.house<0?"neg":""}">${sfmt(t.house)}</b></div><div><span class="label">Players</span><b class="num">${t.players}</b></div>`;
+  const a = d.awards, cards = [];
+  if(a.winner && a.winner.net > 0) cards.push(award("Biggest winner", a.winner.name, sfmt(a.winner.net), "", "good"));
+  if(a.loser && a.loser.net < 0) cards.push(award("Biggest loser", a.loser.name, sfmt(a.loser.net), "", "bad"));
+  if(a.bestHit && a.bestHit.profit > 0) cards.push(award("Best hit", a.bestHit.name, sfmt(a.bestHit.profit), gname(a.bestHit.game) + " · " + (a.bestHit.detail || ""), "good"));
+  if(a.longshot && a.longshot.mult >= 5) cards.push(award("Longest shot", a.longshot.name, Number(a.longshot.mult) + "x", gname(a.longshot.game) + " · " + fmt(a.longshot.bet) + " → " + fmt(a.longshot.payout)));
+  if(a.parlay) cards.push(award("Craziest parlay", a.parlay.name, Number(a.parlay.mult).toFixed(2) + "x", fmt(a.parlay.bet) + " → " + fmt(a.parlay.payout)));
+  if(a.rocket) cards.push(award("Rocket high", a.rocket.name, Number(a.rocket.mult).toFixed(2) + "x", fmt(a.rocket.bet) + " → " + fmt(a.rocket.payout)));
+  if(a.worstBeat && a.worstBeat.profit < 0) cards.push(award("Bad beat", a.worstBeat.name, sfmt(a.worstBeat.profit), gname(a.worstBeat.game) + " · " + (a.worstBeat.detail || ""), "bad"));
+  if(a.degen) cards.push(award(d.period === "week" ? "Degenerate of the week" : "Biggest degenerate", a.degen.name, fmt(a.degen.wagered), a.degen.bets + " bets"));
+  $("stAwards").innerHTML = cards.length ? cards.join("") : `<p class="empty">No bets yet ${d.period === "week" ? "this week" : ""}. Someone has to go first.</p>`;
+  const me = auth?.team;
+  $("stBoard").innerHTML = d.board.map((b,i) => `<tr class="${b.id === me ? "me" : ""}"><td class="num">${i+1}</td><td class="tname">${esc(b.name)}<small>@${esc(b.owner)}</small></td>
+    <td class="r num ${b.net>0?"pos":b.net<0?"neg":""}">${b.net ? sfmt(b.net) : "—"}</td><td class="r num">${b.wagered ? fmt(b.wagered) : "—"}</td><td class="r num">${b.bets || "—"}</td>
+    <td class="r num">${b.best > 0 ? "+" + fmt(b.best) : "—"}</td><td>${b.fav ? gname(b.fav) : '<span class="small">—</span>'}</td></tr>`).join("");
+  $("stGames").innerHTML = d.games.length ? d.games.map(g => `<tr><td>${gname(g.game)}</td><td class="r num">${g.bets}</td><td class="r num">${g.players}</td><td class="r num">${fmt(g.wagered)}</td><td class="r num ${g.house>0?"pos":g.house<0?"neg":""}">${sfmt(g.house)}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="empty">No bets yet.</td></tr>`;
+  $("stRecap").textContent = stRecap(d);
+}
+function stRecap(d){
+  const a = d.awards, t = d.totals, since = sinceLbl(d.since), L = [];
+  L.push("WASHED DELTS CASINO · " + (d.period === "week" ? "Weekly recap" + (since ? " (since " + since + ")" : "") : "All-time recap"));
+  L.push(Number(t.bets).toLocaleString("en-US") + " bets · " + fmt(t.wagered) + " wagered · house " + sfmt(t.house));
+  L.push("");
+  if(a.winner && a.winner.net > 0) L.push("Biggest winner: " + a.winner.name + " " + sfmt(a.winner.net));
+  if(a.loser && a.loser.net < 0) L.push("Biggest loser: " + a.loser.name + " " + sfmt(a.loser.net));
+  if(a.bestHit && a.bestHit.profit > 0) L.push("Best hit: " + a.bestHit.name + " " + sfmt(a.bestHit.profit) + " on " + gname(a.bestHit.game) + (a.bestHit.detail ? " (" + a.bestHit.detail + ")" : ""));
+  if(a.parlay) L.push("Craziest parlay: " + a.parlay.name + " hit " + Number(a.parlay.mult).toFixed(2) + "x, " + fmt(a.parlay.bet) + " to " + fmt(a.parlay.payout));
+  if(a.rocket) L.push("Rocket high: " + a.rocket.name + " cashed " + Number(a.rocket.mult).toFixed(2) + "x");
+  if(a.worstBeat && a.worstBeat.profit < 0) L.push("Bad beat: " + a.worstBeat.name + " lost " + fmt(-a.worstBeat.profit) + " on " + gname(a.worstBeat.game));
+  if(a.degen) L.push((d.period === "week" ? "Degenerate of the week: " : "Biggest degenerate: ") + a.degen.name + ", " + fmt(a.degen.wagered) + " wagered");
+  const active = d.board.filter(b => b.bets > 0);
+  if(active.length){
+    L.push(""); L.push("Standings:");
+    active.forEach((b,i) => L.push((i+1) + ". " + b.name + " " + (b.net ? sfmt(b.net) : "$0")));
+  }
+  L.push(""); L.push("FAAB Bank: " + fmt(d.bank)); L.push(SITE);
+  return L.join("\n");
+}
+async function loadStats(){
+  try { stData = await rpc("stats", {p_period: stPeriod}); stRender(); }
+  catch(e){ $("stAwards").innerHTML = `<p class="empty">Stats aren't set up yet.</p>`; }
+}
+$("stPeriod").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if(!b) return; stPeriod = b.dataset.p;
+  document.querySelectorAll("#stPeriod .chip").forEach(x => x.classList.toggle("on", x === b)); loadStats(); });
+$("stCopy").addEventListener("click", async () => {
+  const txt = $("stRecap").textContent;
+  try { await navigator.clipboard.writeText(txt); toast("Recap copied. Paste it in the group chat."); }
+  catch(e){ const r = document.createRange(); r.selectNodeContents($("stRecap")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("Selected. Tap Copy to grab it."); }
+});
 
 /* ---------- MARKETS ---------- */
 let mkData = [], mkCity = null, mkDay = null, mkSel = null, mkBusy = false, wrInfo = [];
