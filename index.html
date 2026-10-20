@@ -65,8 +65,9 @@ h1,h2,h3{font-family:var(--display);text-transform:uppercase;letter-spacing:.02e
 @media (max-width:560px){.sections{gap:4px}.sections button{padding:9px 8px}.sections button b{font-size:16px}.sections button small{font-size:10.5px;line-height:1.2}}
 .sections button b,.sections button small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sections button[aria-pressed="true"]{background:var(--surface-2);color:var(--fg);box-shadow:inset 0 -3px 0 var(--turf)}
-.games{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-top:10px}
-@media (max-width:620px){.games{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.games{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-top:10px}
+@media (max-width:860px){.games{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:420px){.gtile small{display:none}}
 .gtile{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 8px 9px;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);transition:border-color .15s,color .15s,transform .15s}
 .gtile svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;margin-bottom:2px}
 .gtile b{font-family:var(--display);font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:var(--fg);line-height:1}
@@ -184,6 +185,26 @@ input[type=range]{width:100%;accent-color:var(--turf)}
 .mkb:disabled{opacity:.35;cursor:not-allowed}
 .mkpick{font-size:15px}
 .mknote{border-left:3px solid var(--amber);padding:2px 0 2px 10px;margin:2px 0 4px}
+.rkbox{position:relative;background:radial-gradient(ellipse at 20% 100%,#1a2440,#0a1120 70%);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.rkbox canvas{width:100%;display:block}
+.rkmult{position:absolute;top:14px;left:0;right:0;text-align:center;font-family:var(--mono);font-weight:700;font-size:clamp(34px,9vw,58px);color:var(--fg);text-shadow:0 0 22px rgba(255,178,46,.35);pointer-events:none}
+.rkmult.won{color:var(--win)} .rkmult.lost{color:var(--loss)}
+.rkmsg{position:absolute;bottom:10px;left:0;right:0;text-align:center;color:var(--muted);font-size:14px;pointer-events:none}
+.go.cashout{background:var(--amber);color:#1b1200;width:100%;font-size:24px;padding:14px}
+.go.cashout:disabled{opacity:.5}
+.rkh{font-family:var(--mono);font-size:12px;padding:4px 9px}
+.rkh.low{color:var(--loss)} .rkh.high{color:var(--win)}
+.road{display:flex;gap:4px;overflow-x:auto;padding:10px;background:#1b1f27;border-radius:6px;border:1px solid var(--line);scroll-snap-type:x proximity}
+.lane{flex:0 0 62px;height:150px;border-radius:4px;background:repeating-linear-gradient(180deg,#2a2f3a 0 18px,#2f3542 18px 20px);display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:6px 2px;position:relative;scroll-snap-align:center;border-left:2px dashed rgba(255,255,255,.18)}
+.lane.curb{background:#3b4a3c;border-left:0}
+.lane .lm{font-family:var(--mono);font-size:12px;color:var(--muted);background:rgba(10,17,32,.7);padding:2px 5px;border-radius:3px}
+.lane.passed{background:repeating-linear-gradient(180deg,#24402f 0 18px,#2a4a36 18px 20px)}
+.lane.passed .lm{color:var(--win)}
+.lane.next .lm{color:var(--amber);outline:1px solid var(--amber)}
+.lane.here{box-shadow:inset 0 0 0 2px var(--amber)}
+.lane.hit{background:repeating-linear-gradient(180deg,#4a2226 0 18px,#552a2e 18px 20px)}
+.chick{font-size:34px;line-height:1;margin-bottom:46px}
+#ckActs .go{flex:1}
 .felt{background:radial-gradient(ellipse at 50% 0%,#164a33,#0d2b1e 70%);border:1px solid #1f5a3e;border-radius:6px;padding:18px 14px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
 .dicepair{display:flex;gap:14px}
 .die{width:64px;height:64px;background:#f6f3ea;border-radius:12px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:9px;box-shadow:0 3px 8px rgba(0,0,0,.4),inset 0 -3px 0 rgba(0,0,0,.12)}
@@ -290,7 +311,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
 
   <section id="gameSec" hidden>
     <nav class="sections" aria-label="Sections">
-      <button data-sec="casino" aria-pressed="true"><b>Casino</b><small>6 games</small></button>
+      <button data-sec="casino" aria-pressed="true"><b>Casino</b><small>8 games</small></button>
       <button data-sec="sportsbook" aria-pressed="false"><b>Sportsbook</b><small>NFL lines &amp; parlays</small></button>
       <button data-sec="markets" aria-pressed="false"><b>Markets</b></button>
     </nav>
@@ -301,6 +322,8 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <button role="tab" class="gtile" data-g="dice" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/></svg><b>Dice</b><small>Pick your odds</small></button>
       <button role="tab" class="gtile" data-g="plinko" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.2" fill="currentColor"/><circle cx="9" cy="10" r="1.2" fill="currentColor"/><circle cx="15" cy="10" r="1.2" fill="currentColor"/><circle cx="6" cy="15" r="1.2" fill="currentColor"/><circle cx="12" cy="15" r="1.2" fill="currentColor"/><circle cx="18" cy="15" r="1.2" fill="currentColor"/><path d="M3 20h18M7.5 20v-2M12 20v-2M16.5 20v-2"/></svg><b>Plinko</b><small>Up to 25x</small></button>
       <button role="tab" class="gtile" data-g="craps" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="8" width="10" height="10" rx="2.2" transform="rotate(-12 7.5 13)"/><rect x="11.5" y="5" width="10" height="10" rx="2.2" transform="rotate(14 16.5 10)"/><circle cx="7.4" cy="13" r="1" fill="currentColor"/><circle cx="16.5" cy="10" r="1" fill="currentColor"/></svg><b>Craps</b><small>Street rules</small></button>
+      <button role="tab" class="gtile" data-g="rocket" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5c2.6-.9 4.6-.6 5.2-.2.4.6.7 2.6-.2 5.2l-5.6 5.6-4.9-4.9z"/><path d="M9.6 9.4 6.4 9l-2.2 2.2 3.4 1.2M14.6 14.4l.4 3.2-2.2 2.2-1.2-3.4"/><path d="M7.2 16.8c-1.2.3-2.3 1.5-2.7 2.7 1.2-.4 2.4-1.5 2.7-2.7z"/><circle cx="16" cy="8" r="1.1"/></svg><b>Rocket</b><small>Cash out before it blows</small></button>
+      <button role="tab" class="gtile" data-g="chicken" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 13c0-3.3 2-6 5-6 1.6 0 2.6.9 3 2l2.5.6-2.2 1.1c.2 3.4-2.1 6.3-5.3 6.3-1.7 0-3-1.6-3-4z"/><path d="M12.6 4.2c.4-.9 1.3-1.2 2-.7-.2-.9.6-1.6 1.4-1.1M11 17.3V20M14 17v3M9.8 20h2.4M12.8 20h2.4"/><circle cx="14.2" cy="9.4" r=".7" fill="currentColor"/></svg><b>Chicken</b><small>Cross the road</small></button>
     </nav>
 
     <!-- ROULETTE -->
@@ -426,6 +449,35 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <div class="rules">You're betting against the house at the DraftKings line shown, and the line and price lock when you place the bet. No max bet. Parlays take 2 to 6 picks and every pick has to hit. From one game you can pair the spread or moneyline with the total (not the spread with the moneyline), and that pair pays a little less than two separate games would. A push drops that pick out and the rest still pays. Parlay payouts are capped (the commish sets the cap). Betting on a game closes at kickoff. Bets grade automatically a few minutes after the final whistle. Tail copies a bet at the current line; fade takes the other side. Your bet comes out of your FAAB right away, so it counts in that Monday's Sleeper sync even if the game hasn't been played yet.</div>
     </div>
 
+    <!-- ROCKET -->
+    <div class="stage" data-game="rocket" hidden>
+      <div class="rkbox"><canvas id="rkCanvas" width="1040" height="520"></canvas><div class="rkmult" id="rkMult">1.00x</div><div class="rkmsg" id="rkMsg">Set your bet and launch</div></div>
+      <div class="chips" id="rkHist"></div>
+      <div class="betrow"><label class="small" for="rkAuto">Auto cash-out at</label><input id="rkAuto" type="number" min="1.01" max="100" step="0.01" placeholder="off" aria-label="Auto cash-out multiplier" style="width:96px;background:var(--bg);border:1px solid var(--line);border-radius:4px;color:var(--fg);padding:9px 10px;font-family:var(--mono);font-size:15px"><span class="small">x (leave blank to cash out yourself)</span></div>
+      <div class="betrow" data-bet="rocket"></div>
+      <button class="go cashout" id="rkCash" hidden>Cash out</button>
+      <div class="result" id="rkRes"></div>
+      <div class="rules">The multiplier starts at 1.00x and climbs (2x in about 12 seconds, 10x in about 38). The rocket blows up at a random point decided on the server the moment you launch, and nobody can see it ahead of time, including the commish. Cash out before it blows to win your bet times the multiplier; if it blows first, you lose the bet. About 3% of launches blow up instantly at 1.00x. Max 100x. Set an auto cash-out and the round settles the instant you launch. The house keeps 3% wherever you cash out.</div>
+    </div>
+
+    <!-- CHICKEN -->
+    <div class="stage" data-game="chicken" hidden>
+      <div class="chips" id="ckLevels">
+        <button class="chip on" data-level="easy">Easy · 15 lanes</button>
+        <button class="chip" data-level="medium">Medium · 12 lanes</button>
+        <button class="chip" data-level="hard">Hard · 10 lanes</button>
+        <button class="chip" data-level="hardcore">Hardcore · 8 lanes</button>
+      </div>
+      <div class="road" id="ckRoad"></div>
+      <div class="betrow" data-bet="chicken"></div>
+      <div class="betrow" id="ckActs" hidden>
+        <button class="go" id="ckStep">Step</button>
+        <button class="go cashout" id="ckCash">Cash out</button>
+      </div>
+      <div class="result" id="ckRes"></div>
+      <div class="rules">Walk your chicken across the road one lane at a time. Every lane you survive raises the multiplier; get hit and you lose the bet. Cash out whenever you want, or make it all the way across for the top payout. Each step is rolled on the server when you take it. Chance of getting hit per lane: Easy 10%, Medium 20%, Hard 30%, Hardcore 45%. The house keeps 3% wherever you stop. If a round is still open when the commish settles on Monday, it's cashed out where it stands.</div>
+    </div>
+
     <!-- CRAPS -->
     <div class="stage" data-game="craps" hidden>
       <div class="felt">
@@ -521,7 +573,7 @@ const sfmt = n => (n > 0 ? "+" : "") + fmt(n);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const reduced = () => matchMedia("(prefers-reduced-motion:reduce)").matches;
 let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3600); }
-const GAME_NAMES = {roulette:"Roulette",blackjack:"Blackjack",slots:"Slots",dice:"Dice",plinko:"Plinko",craps:"Craps",sportsbook:"Sportsbook",parlay:"Parlay",weather:"Weather",rebate:"Loss rebate"};
+const GAME_NAMES = {roulette:"Roulette",blackjack:"Blackjack",slots:"Slots",dice:"Dice",plinko:"Plinko",craps:"Craps",sportsbook:"Sportsbook",parlay:"Parlay",weather:"Weather",rocket:"Rocket",chicken:"Chicken",rebate:"Loss rebate"};
 
 /* ---------- server ---------- */
 const H = {apikey: SUPABASE_KEY, "Content-Type": "application/json"};
@@ -599,8 +651,8 @@ $("pinForm").addEventListener("submit", async e => {
 $("logout").addEventListener("click", () => { auth = null; balance = null; try{ localStorage.removeItem("delts-auth"); }catch(e){} render(); });
 
 /* ---------- bet controls ---------- */
-const betVals = {roulette:100, blackjack:100, slots:50, dice:100, plinko:50, craps:100, sportsbook:100, markets:100};
-const goLabels = {roulette:"Spin", blackjack:"Deal", slots:"Spin", dice:"Roll", plinko:"Drop", craps:"Shoot", sportsbook:"Place bet", markets:"Place bet"};
+const betVals = {roulette:100, blackjack:100, slots:50, dice:100, plinko:50, craps:100, sportsbook:100, markets:100, rocket:50, chicken:50};
+const goLabels = {roulette:"Spin", blackjack:"Deal", slots:"Spin", dice:"Roll", plinko:"Drop", craps:"Shoot", sportsbook:"Place bet", markets:"Place bet", rocket:"Launch", chicken:"Start"};
 document.querySelectorAll("[data-bet]").forEach(row => {
   const g = row.dataset.bet;
   row.innerHTML = `<input type="number" id="bet-${g}" min="1" step="1" inputmode="numeric" value="${betVals[g]}" aria-label="Bet amount">
@@ -646,6 +698,8 @@ function selectGame(g){
   document.querySelectorAll("[data-game]").forEach(s => s.hidden = s.dataset.game !== g);
   try{ localStorage.setItem("delts-tab", g); }catch(e){}
   if(g === "plinko") setTimeout(drawPlinko);
+  if(g === "rocket") setTimeout(() => { rkDraw(); loadRocket(); });
+  if(g === "chicken") setTimeout(loadChicken);
   if(g === "sportsbook") setTimeout(() => loadSportsbook(true));
   if(g === "markets") setTimeout(() => loadMarkets(true));
 }
@@ -1006,6 +1060,149 @@ $("go-markets").addEventListener("click", async () => {
 });
 setInterval(() => { if(!document.hidden && !document.querySelector('[data-game="markets"]').hidden) loadMarkets(); }, 60000);
 
+/* ---------- ROCKET ---------- */
+let rk = {state:"idle"}, rkT0 = 0, rkRaf = 0, rkPoll = 0, rkPath = [], rkBet = 0, rkCrash = null;
+const rkc = $("rkCanvas"), rkx = rkc.getContext("2d");
+const rkMultAt = secs => Math.floor(Math.exp(0.06 * Math.max(secs, 0)) * 100) / 100;
+function rkDraw(m){
+  const W = rkc.width, H = rkc.height, pad = 40, padL = 84; rkx.clearRect(0,0,W,H);
+  const cur = m ?? (rkPath.length ? rkPath[rkPath.length-1][1] : 1);
+  const tMax = Math.max(12, (rkPath.length ? rkPath[rkPath.length-1][0] : 0) * 1.15), mMax = Math.max(2, cur * 1.2);
+  const X = t => padL + (W - padL - pad) * t / tMax, Y = v => H - pad - (H - pad*2) * (v - 1) / (mMax - 1);
+  rkx.strokeStyle = "#26324c"; rkx.lineWidth = 1; rkx.font = "500 20px 'JetBrains Mono', monospace"; rkx.fillStyle = "#8a96ad"; rkx.textAlign = "right";
+  const step = mMax <= 3 ? 0.5 : mMax <= 6 ? 1 : mMax <= 15 ? 2 : mMax <= 40 ? 5 : 20;
+  for(let v = 1; v <= mMax; v += step){ const y = Y(v); rkx.beginPath(); rkx.moveTo(padL, y); rkx.lineTo(W - pad/2, y); rkx.stroke(); rkx.fillText(v.toFixed(v < 10 ? 1 : 0) + "x", padL - 10, y + 7); }
+  if(rkPath.length > 1){
+    const crashed = rk.state === "crashed";
+    rkx.beginPath(); rkx.moveTo(X(0), Y(1)); rkPath.forEach(([t,v]) => rkx.lineTo(X(t), Y(v)));
+    rkx.lineTo(X(rkPath[rkPath.length-1][0]), Y(1)); rkx.closePath(); rkx.fillStyle = crashed ? "rgba(242,92,100,.12)" : "rgba(255,178,46,.12)"; rkx.fill();
+    rkx.beginPath(); rkx.moveTo(X(0), Y(1)); rkPath.forEach(([t,v]) => rkx.lineTo(X(t), Y(v)));
+    rkx.strokeStyle = crashed ? "#f25c64" : "#ffb22e"; rkx.lineWidth = 5; rkx.stroke();
+    const [lt, lv] = rkPath[rkPath.length-1]; rkx.beginPath(); rkx.arc(X(lt), Y(lv), 10, 0, Math.PI*2); rkx.fillStyle = crashed ? "#f25c64" : "#e9eef7"; rkx.fill();
+  }
+}
+function rkSetMult(m, cls){ $("rkMult").textContent = m.toFixed(2) + "x"; $("rkMult").className = "rkmult " + (cls || ""); }
+function rkUi(){
+  const flying = rk.state === "flying";
+  $("rkCash").hidden = !flying;
+  document.querySelector('[data-bet="rocket"]').hidden = flying;
+  $("go-rocket").disabled = flying || !isLive();
+  $("rkAuto").disabled = flying;
+}
+function rkTick(){
+  if(rk.state !== "flying") return;
+  const t = (performance.now() - rkT0) / 1000, m = rkMultAt(t);
+  rkPath.push([t, m]); rkSetMult(m);
+  $("rkCash").textContent = "Cash out " + fmt(Math.floor(rkBet * m));
+  rkDraw(); rkRaf = requestAnimationFrame(rkTick);
+}
+function rkStart(elapsed){
+  rk.state = "flying"; rkT0 = performance.now() - elapsed * 1000; rkPath = [[0,1]]; $("rkMsg").textContent = ""; $("rkRes").textContent = "";
+  cancelAnimationFrame(rkRaf); rkRaf = requestAnimationFrame(rkTick);
+  clearInterval(rkPoll); rkPoll = setInterval(rkCheck, 400); rkUi();
+}
+function rkEnd(r){
+  clearInterval(rkPoll); cancelAnimationFrame(rkRaf);
+  if(r.state === "crashed"){
+    rk.state = "crashed"; const c = Number(r.crash);
+    rkPath = rkPath.filter(p => p[1] <= c); rkPath.push([Math.log(Math.max(c,1.0001))/0.06, c]);
+    rkSetMult(c, "lost"); $("rkMsg").textContent = "Blew up at " + c.toFixed(2) + "x"; showRes($("rkRes"), r.bet || rkBet, 0);
+  } else if(r.state === "cashed"){
+    rk.state = "cashed"; rkSetMult(Number(r.mult), "won"); $("rkMsg").textContent = "Cashed out at " + Number(r.mult).toFixed(2) + "x"; showRes($("rkRes"), r.bet, r.payout);
+  }
+  rkDraw(); rkUi(); refresh(); loadRocketHist();
+}
+async function rkCheck(){
+  try { const r = await rpc("rk_status", creds()); balance = r.balance;
+    if(r.state === "crashed") rkEnd(r); else if(r.state === "idle"){ clearInterval(rkPoll); rk.state = "idle"; rkUi(); }
+  } catch(e){}
+}
+$("go-rocket").addEventListener("click", async () => {
+  if(rk.state === "flying" || busy) return;
+  const bet = getBet("rocket"); const err = preCheck(bet); if(err) return toast(err);
+  const autoRaw = $("rkAuto").value.trim(), auto = autoRaw ? Number(autoRaw) : null;
+  if(auto !== null && !(auto >= 1.01 && auto <= 100)) return toast("Auto cash-out has to be between 1.01x and 100x.");
+  busy = true; rkBet = bet;
+  try {
+    const r = await rpc("rk_launch", {...creds(), p_bet: bet, p_auto: auto});
+    balance = r.balance; render();
+    if(r.mode === "auto"){
+      // replay the flight up to the cash-out or the blow-up
+      const c = Number(r.crash), a = Number(r.auto), end = Math.min(c, a), won = r.payout > 0;
+      const dur = reduced() ? 0 : Math.min(6, Math.log(Math.max(end,1.0001)) / 0.06) * 1000, t0 = performance.now(), simEnd = Math.log(Math.max(end,1.0001))/0.06;
+      rk.state = "flying"; rkPath = [[0,1]]; rkUi(); $("rkCash").hidden = true; $("rkMsg").textContent = "";
+      await new Promise(done => { (function f(){ const k = dur ? Math.min(1, (performance.now() - t0) / dur) : 1, t = simEnd * k, m = Math.min(rkMultAt(t), end);
+        rkPath.push([t, m]); rkSetMult(m); rkDraw(); if(k < 1) requestAnimationFrame(f); else done(); })(); });
+      if(won){ rk.state = "cashed"; rkSetMult(a, "won"); $("rkMsg").textContent = "Auto cashed out at " + a.toFixed(2) + "x · it went to " + c.toFixed(2) + "x"; showRes($("rkRes"), bet, r.payout); }
+      else { rk.state = "crashed"; rkSetMult(c, "lost"); $("rkMsg").textContent = "Blew up at " + c.toFixed(2) + "x before " + a.toFixed(2) + "x"; showRes($("rkRes"), bet, 0); }
+      rkDraw(); rkUi(); refresh(); loadRocketHist();
+    } else if(r.state === "crashed"){ rkPath = [[0,1]]; rkEnd({...r, bet}); }
+    else rkStart(Number(r.elapsed || 0));
+  } catch(e){ onAuthError(e); }
+  finally { busy = false; }
+});
+$("rkCash").addEventListener("click", async () => {
+  if(rk.state !== "flying") return;
+  $("rkCash").disabled = true;
+  try { const r = await rpc("rk_cashout", creds()); balance = r.balance; rkEnd(r); }
+  catch(e){ onAuthError(e); }
+  finally { $("rkCash").disabled = false; }
+});
+async function loadRocketHist(){
+  if(!auth) return;
+  try { const h = await rpc("rk_history", creds());
+    $("rkHist").innerHTML = h.length ? `<span class="small">Your last rockets:</span>` + h.map(x => { const v = Number(x); return `<span class="chip rkh ${v < 2 ? "low" : v >= 10 ? "high" : ""}">${v.toFixed(2)}x</span>`; }).join("") : "";
+  } catch(e){}
+}
+async function loadRocket(){
+  if(!auth) return;
+  loadRocketHist();
+  if(rk.state === "flying") return;
+  try { const r = await rpc("rk_status", creds()); if(r.state === "flying"){ rkBet = r.bet; rkStart(Number(r.elapsed)); $("rkMsg").textContent = "Your rocket is still flying"; } } catch(e){}
+}
+rkDraw();
+
+/* ---------- CHICKEN ---------- */
+let ck = {state:"idle"}, ckLevel = "easy", ckBusy = false;
+const CK = {easy:{s:0.90,n:15}, medium:{s:0.80,n:12}, hard:{s:0.70,n:10}, hardcore:{s:0.55,n:8}};
+const ckMult = (lv, k) => k <= 0 ? 1 : Math.min(100, Math.floor(0.97 / Math.pow(CK[lv].s, k) * 100) / 100);
+function ckRender(hitLane){
+  const lv = ck.level || ckLevel, n = CK[lv].n, step = ck.step || 0;
+  let html = `<div class="lane curb${step === 0 && ck.state !== "hit" ? " here" : ""}"><span class="lm">Start</span>${step === 0 && ck.state !== "hit" ? '<span class="chick" aria-label="Your chicken">🐔</span>' : ""}</div>`;
+  for(let i = 1; i <= n; i++){
+    const passed = i < step || (i === step && ck.state === "cashed"), here = i === step && ck.state !== "hit", hit = hitLane === i;
+    html += `<div class="lane${passed ? " passed" : ""}${here ? " here" : ""}${hit ? " hit" : ""}${i === step + 1 && ck.state === "crossing" ? " next" : ""}"><span class="lm">${ckMult(lv, i).toFixed(2)}x</span>${here ? '<span class="chick" aria-label="Your chicken">🐔</span>' : hit ? '<span class="chick" aria-label="Hit">💥</span>' : ""}</div>`;
+  }
+  $("ckRoad").innerHTML = html;
+  const here = $("ckRoad").querySelector(".here, .hit"); if(here) here.scrollIntoView({block:"nearest", inline:"center", behavior: reduced() ? "auto" : "smooth"});
+  const live = ck.state === "crossing";
+  $("ckActs").hidden = !live; $("go-chicken").disabled = live || !isLive();
+  document.querySelector('[data-bet="chicken"]').hidden = live;
+  document.querySelectorAll("#ckLevels .chip").forEach(b => { b.classList.toggle("on", b.dataset.level === lv); b.disabled = live; });
+  if(live){ $("ckStep").textContent = "Step · " + ckMult(lv, step + 1).toFixed(2) + "x"; $("ckCash").textContent = "Cash out " + fmt(ck.cashout); $("ckCash").disabled = step === 0; }
+}
+$("ckLevels").addEventListener("click", e => { const b = e.target.closest("[data-level]"); if(!b || ck.state === "crossing") return; ckLevel = b.dataset.level; ck = {state:"idle"}; $("ckRes").textContent = ""; ckRender(); });
+async function ckCall(fn, extra){
+  if(ckBusy) return; ckBusy = true; busy = true;
+  try {
+    const r = await rpc(fn, {...creds(), ...extra}); balance = r.balance;
+    if(r.state === "hit"){ ck = {state:"hit", level:r.level, step:r.step - 1}; ckRender(r.step); showRes($("ckRes"), r.bet, 0, "hit in lane " + r.step); }
+    else if(r.state === "cashed"){ ck = {state:"cashed", level:r.level, step:r.step}; ckRender(); showRes($("ckRes"), r.bet, r.payout, r.step + " lanes · " + Number(r.mult).toFixed(2) + "x"); }
+    else if(r.state === "crossing"){ ck = r; $("ckRes").className = "result"; $("ckRes").textContent = ""; ckRender(); }
+    else { ck = {state:"idle"}; ckRender(); }
+  } catch(e){ onAuthError(e); }
+  finally { ckBusy = false; busy = false; refresh(); }
+}
+$("go-chicken").addEventListener("click", () => { const bet = getBet("chicken"); const err = preCheck(bet); if(err) return toast(err); ckCall("ck_start", {p_bet: bet, p_level: ckLevel}); });
+$("ckStep").addEventListener("click", () => ckCall("ck_step"));
+$("ckCash").addEventListener("click", () => ckCall("ck_cashout"));
+async function loadChicken(){
+  if(!auth){ ckRender(); return; }
+  try { const r = await rpc("ck_state", creds()); if(r.state === "crossing"){ ck = r; ckLevel = r.level; $("ckRes").className = "result push"; $("ckRes").textContent = "Round in progress"; } } catch(e){}
+  ckRender();
+}
+ckRender();
+
 /* ---------- CRAPS ---------- */
 const PIPS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 function drawDie(el, n){ el.innerHTML = Array.from({length:9}, (_,i) => `<i${PIPS[n].includes(i)?' class="p"':''}></i>`).join(""); el.setAttribute("aria-label", "Die showing " + n); }
@@ -1175,6 +1372,8 @@ function render(){
     $("dayBar").style.width = Math.min(100, dw/dl*100) + "%";
   } else { $("balBig").textContent = "$—"; $("whoLine").textContent = "Pick your team below"; $("meter").hidden = true; }
   ["roulette","slots","dice","plinko","craps"].forEach(g => { $("go-"+g).disabled = !isLive(); });
+  $("go-rocket").disabled = !isLive() || rk.state === "flying";
+  $("go-chicken").disabled = !isLive() || ck.state === "crossing";
   $("go-sportsbook").disabled = !isLive() || !sbPicks.length;
   $("go-markets").disabled = !isLive() || !mkSel;
   bjRender();
