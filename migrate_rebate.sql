@@ -61,7 +61,7 @@ begin
       values (r.team_id, 'rebate', 0, r.rebate, 'Weekly loss rebate · ' || pct || '% of the bank, split by losses');
     paid := paid + r.rebate;
   end loop;
-  update teams set base = base + net - settled, settled = net;
+  update teams set base = base + net - settled, settled = net where id is not null;
   update config set last_settled = now() where id = 1;
   return json_build_object('ok', true, 'rebated', paid);
 end $$;

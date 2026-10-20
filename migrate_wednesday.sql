@@ -48,7 +48,7 @@ begin
       values (r.team_id, 'rebate', 0, r.amt, 'Weekly loss rebate · ' || pct || '% of the bank, split by losses');
     paid := paid + r.amt;
   end loop;
-  delete from pending_rebates;
+  delete from pending_rebates where team_id is not null;
   return json_build_object('ok', true, 'paid', paid);
 end $$;
 
