@@ -367,7 +367,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
         <h3 class="sbh">My bets</h3>
         <ul class="feed" id="sbMine"><li class="empty">No bets yet.</li></ul>
       </div>
-      <div class="rules">You're betting against the house at the DraftKings line shown, and the line and price lock when you place the bet. No max bet. Parlays take 2 to 6 picks, one per game, and every pick has to hit. A push drops that pick out and the rest still pays. Parlay payouts are capped (the commish sets the cap). Betting on a game closes at kickoff. Bets grade automatically a few minutes after the final whistle. Tail copies a bet at the current line; fade takes the other side. Your bet comes out of your FAAB right away, so it counts in that Monday's Sleeper sync even if the game hasn't been played yet.</div>
+      <div class="rules">You're betting against the house at the DraftKings line shown, and the line and price lock when you place the bet. No max bet. Parlays take 2 to 6 picks and every pick has to hit. From one game you can pair the spread or moneyline with the total (not the spread with the moneyline), and that pair pays a little less than two separate games would. A push drops that pick out and the rest still pays. Parlay payouts are capped (the commish sets the cap). Betting on a game closes at kickoff. Bets grade automatically a few minutes after the final whistle. Tail copies a bet at the current line; fade takes the other side. Your bet comes out of your FAAB right away, so it counts in that Monday's Sleeper sync even if the game hasn't been played yet.</div>
     </div>
 
     <!-- CRAPS -->
@@ -425,6 +425,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <label>Casino<select id="cOpen" style="background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:4px;padding:7px"><option value="1">Open</option><option value="0">Closed</option></select></label>
       <label id="cRebateWrap" hidden>Loss rebate %<input id="cRebate" type="number" min="0" max="100"></label>
       <label id="cCapWrap" hidden>Max parlay payout<input id="cCap" type="number" min="100"></label>
+      <label id="cSgpWrap" hidden>Same-game parlay pays %<input id="cSgp" type="number" min="10" max="100"></label>
       <button class="go alt" id="cSave" style="font-size:16px;padding:8px 14px">Save rules</button>
     </div>
     <div class="small" id="cSteps">
@@ -755,18 +756,20 @@ function sbSlip(){
   const qs = sbPicks.map(p => ({...p, ...sbQuote(p.game, p.market, p.pick)}));
   $("sbLegs").innerHTML = qs.map((q,i) => `<li><span><b>${esc(q.label)}</b> <span class="num">(${odds(q.price)})</span><span class="small"> · ${esc(q.g.away)} @ ${esc(q.g.home)}, ${kick(q.g.kickoff)}</span></span><button class="linkbtn" data-rm="${i}" aria-label="Remove">✕</button></li>`).join("");
   const multi = qs.length > 1, sameGame = new Set(qs.map(q => q.game)).size !== qs.length;
+  const sgp = cfg?.sgp_pct, sgpBlocked = sameGame && sgp == null;   // server not upgraded yet
   $("sbMode").hidden = !multi;
   if(!multi) sbMode = "parlay";
-  if(multi && sameGame && sbMode === "parlay") sbMode = "straight";
+  if(multi && sgpBlocked && sbMode === "parlay") sbMode = "straight";
   document.querySelectorAll("#sbMode button").forEach(b => { b.setAttribute("aria-pressed", b.dataset.mode === sbMode); });
-  document.querySelector('#sbMode [data-mode="parlay"]').disabled = sameGame || qs.length > 6;
-  const dec = qs.reduce((a,q) => a * decOdds(q.price), 1);
-  $("sbParlayOdds").textContent = sameGame ? "One pick per game" : qs.length > 6 ? "Max 6 picks" : dec.toFixed(2) + "x · " + odds(dec >= 2 ? Math.round((dec-1)*100) : -Math.round(100/(dec-1)));
+  document.querySelector('#sbMode [data-mode="parlay"]').disabled = sgpBlocked || qs.length > 6;
+  const byGame = {}; qs.forEach(q => { (byGame[q.game] = byGame[q.game] || []).push(decOdds(q.price)); });
+  const dec = Object.values(byGame).reduce((a, ds) => { const d = ds.reduce((x,y) => x*y, 1); return a * (ds.length > 1 ? 1 + (d - 1) * (sgp ?? 100) / 100 : d); }, 1);
+  $("sbParlayOdds").textContent = sgpBlocked ? "One pick per game" : qs.length > 6 ? "Max 6 picks" : dec.toFixed(2) + "x · " + odds(dec >= 2 ? Math.round((dec-1)*100) : -Math.round(100/(dec-1)));
   const st = getBet("sportsbook"), okSt = Number.isInteger(st) && st > 0;
   if(!okSt) $("sbToWin").textContent = "";
   else if(!multi) $("sbToWin").textContent = "To win " + fmt(toWin(st, qs[0].price)) + " (returns " + fmt(st + toWin(st, qs[0].price)) + ")";
   else if(sbMode === "parlay"){ const cap = cfg?.parlay_max_payout || Infinity, ret = Math.min(Math.floor(st * dec), cap);
-    $("sbToWin").textContent = "Parlay to win " + fmt(ret - st) + (st * dec > cap ? " (capped at " + fmt(cap) + " payout)" : ""); }
+    $("sbToWin").textContent = "Parlay to win " + fmt(ret - st) + (st * dec > cap ? " (capped at " + fmt(cap) + " payout)" : "") + (sameGame && sgp != null && sgp < 100 ? ` · same-game picks pay ${sgp}% of the usual winnings` : ""); }
   else $("sbToWin").textContent = qs.length + " bets of " + fmt(st) + " = " + fmt(st * qs.length) + " total · to win up to " + fmt(qs.reduce((a,q) => a + toWin(st, q.price), 0));
   $("go-sportsbook").textContent = multi ? (sbMode === "parlay" ? "Place parlay" : "Place " + qs.length + " bets") : "Place bet";
   $("go-sportsbook").disabled = !isLive();
@@ -774,7 +777,11 @@ function sbSlip(){
 function sbToggle(game, market, pick){
   const i = sbPicks.findIndex(p => p.game === game && p.market === market && p.pick === pick);
   if(i >= 0) sbPicks.splice(i, 1);
-  else { sbPicks = sbPicks.filter(p => !(p.game === game && p.market === market)); sbPicks.push({game, market, pick}); }
+  else {
+    const grp = m => m === "total" ? "total" : "side";   // spread and moneyline can't share a parlay
+    sbPicks = sbPicks.filter(p => !(p.game === game && grp(p.market) === grp(market)));
+    sbPicks.push({game, market, pick});
+  }
   $("sbRes").textContent = ""; sbRender(); sbSlip();
 }
 $("sbBoard").addEventListener("click", e => {
@@ -939,6 +946,7 @@ async function loadAdmin(){
   $("cMax").value = cfg?.max_bet; $("cDay").value = noLimit() ? 0 : cfg?.daily_limit; $("cOpen").value = cfg?.open ? "1" : "0";
   const hasRebate = cfg && cfg.rebate_pct != null; $("cRebateWrap").hidden = !hasRebate; if(hasRebate) $("cRebate").value = cfg.rebate_pct;
   const hasCap = cfg && cfg.parlay_max_payout != null; $("cCapWrap").hidden = !hasCap; if(hasCap) $("cCap").value = cfg.parlay_max_payout;
+  const hasSgp = cfg && cfg.sgp_pct != null; $("cSgpWrap").hidden = !hasSgp; if(hasSgp) $("cSgp").value = cfg.sgp_pct;
   const owedTotal = overview.reduce((a,t) => a + (t.owed || 0), 0);
   $("cPay").hidden = !(owedTotal > 0); $("cPay").textContent = owedTotal > 0 ? "Pay rebates (" + fmt(owedTotal) + ")" : "Pay rebates";
   $("cTable").innerHTML = overview.map(t => `<tr><td class="tname">${esc(t.name)}</td>
@@ -955,6 +963,7 @@ $("adminLogin").addEventListener("submit", async e => {
 });
 $("cSave").addEventListener("click", async () => {
   try { await rpc("admin_set_config", {p_pin: adminPin, p_open: $("cOpen").value === "1", p_max: parseInt($("cMax").value)||1, p_daily: (parseInt($("cDay").value) || 0) <= 0 ? NO_LIMIT : parseInt($("cDay").value)});
+    if(cfg && cfg.sgp_pct != null) await rpc("admin_set_sgp", {p_pin: adminPin, p_pct: Math.max(10, Math.min(100, parseInt($("cSgp").value) || 90))});
     if(cfg && cfg.parlay_max_payout != null) await rpc("admin_set_parlay_cap", {p_pin: adminPin, p_cap: parseInt($("cCap").value) || 20000});
     if(cfg && cfg.rebate_pct != null) await rpc("admin_set_rebate", {p_pin: adminPin, p_pct: Math.max(0, Math.min(100, parseInt($("cRebate").value) || 0))});
     toast("Rules saved."); await refresh(); await loadAdmin(); }
