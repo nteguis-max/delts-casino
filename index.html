@@ -205,6 +205,11 @@ input[type=range]{width:100%;accent-color:var(--turf)}
 .lane.hit{background:repeating-linear-gradient(180deg,#4a2226 0 18px,#552a2e 18px 20px)}
 .chick{font-size:34px;line-height:1;margin-bottom:46px}
 #ckActs .go{flex:1}
+.skyline{position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#060b18}
+.skyline canvas{width:100%;display:block}
+.skycap{position:absolute;left:12px;top:10px;display:flex;flex-direction:column;gap:1px;text-shadow:0 1px 4px #000}
+.skycap b{font-family:var(--display);font-size:20px;text-transform:uppercase;letter-spacing:.03em}
+.minisky{width:120px;height:34px;display:block;border-radius:3px}
 .bizgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:620px){.bizgrid{grid-template-columns:1fr}}
 .bizcard{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -385,7 +390,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <button role="tab" class="gtile" data-g="blackjack" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="10" height="14" rx="1.6" transform="rotate(-10 8.5 12)"/><rect x="10" y="4" width="10" height="14" rx="1.6" transform="rotate(8 15 11)"/></svg><b>Blackjack</b><small>Pays 3 to 2 · splits</small></button>
       <button role="tab" class="gtile" data-g="slots" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M8.8 5v14M15.2 5v14"/><path d="M4.5 12h2.3M11 12h2M17.2 12h2.3" stroke-width="2.6"/></svg><b>Slots</b><small>Up to 150x</small></button>
       <button role="tab" class="gtile" data-g="dice" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="8.5" cy="8.5" r="1.1" fill="currentColor"/><circle cx="12" cy="12" r="1.1" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.1" fill="currentColor"/></svg><b>Dice</b><small>Pick your odds</small></button>
-      <button role="tab" class="gtile" data-g="plinko" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.2" fill="currentColor"/><circle cx="9" cy="10" r="1.2" fill="currentColor"/><circle cx="15" cy="10" r="1.2" fill="currentColor"/><circle cx="6" cy="15" r="1.2" fill="currentColor"/><circle cx="12" cy="15" r="1.2" fill="currentColor"/><circle cx="18" cy="15" r="1.2" fill="currentColor"/><path d="M3 20h18M7.5 20v-2M12 20v-2M16.5 20v-2"/></svg><b>Plinko</b><small>Up to 25x</small></button>
+      <button role="tab" class="gtile" data-g="plinko" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.2" fill="currentColor"/><circle cx="9" cy="10" r="1.2" fill="currentColor"/><circle cx="15" cy="10" r="1.2" fill="currentColor"/><circle cx="6" cy="15" r="1.2" fill="currentColor"/><circle cx="12" cy="15" r="1.2" fill="currentColor"/><circle cx="18" cy="15" r="1.2" fill="currentColor"/><path d="M3 20h18M7.5 20v-2M12 20v-2M16.5 20v-2"/></svg><b>Plinko</b><small>Up to 40x</small></button>
       <button role="tab" class="gtile" data-g="craps" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2.5" y="8" width="10" height="10" rx="2.2" transform="rotate(-12 7.5 13)"/><rect x="11.5" y="5" width="10" height="10" rx="2.2" transform="rotate(14 16.5 10)"/><circle cx="7.4" cy="13" r="1" fill="currentColor"/><circle cx="16.5" cy="10" r="1" fill="currentColor"/></svg><b>Craps</b><small>Street rules</small></button>
       <button role="tab" class="gtile" data-g="rocket" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 4.5c2.6-.9 4.6-.6 5.2-.2.4.6.7 2.6-.2 5.2l-5.6 5.6-4.9-4.9z"/><path d="M9.6 9.4 6.4 9l-2.2 2.2 3.4 1.2M14.6 14.4l.4 3.2-2.2 2.2-1.2-3.4"/><path d="M7.2 16.8c-1.2.3-2.3 1.5-2.7 2.7 1.2-.4 2.4-1.5 2.7-2.7z"/><circle cx="16" cy="8" r="1.1"/></svg><b>Rocket</b><small>Cash out before it blows</small></button>
       <button role="tab" class="gtile" data-g="chicken" aria-selected="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 13c0-3.3 2-6 5-6 1.6 0 2.6.9 3 2l2.5.6-2.2 1.1c.2 3.4-2.1 6.3-5.3 6.3-1.7 0-3-1.6-3-4z"/><path d="M12.6 4.2c.4-.9 1.3-1.2 2-.7-.2-.9.6-1.6 1.4-1.1M11 17.3V20M14 17v3M9.8 20h2.4M12.8 20h2.4"/><circle cx="14.2" cy="9.4" r=".7" fill="currentColor"/></svg><b>Chicken</b><small>Cross the road</small></button>
@@ -412,7 +417,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
           <div class="result" id="rlRes"></div>
         </div>
       </div>
-      <div class="rules">Single zero wheel. Red, black, odd, even and halves pay 1 to 1. Dozens pay 2 to 1. A single number pays 35 to 1. Zero loses every outside bet.</div>
+      <div class="rules">Single zero wheel. Red, black, odd, even and halves pay 1 to 1. Dozens pay 2 to 1. A single number pays 35 to 1. If it lands on zero, red/black, odd/even and halves bets get half back; dozens and single numbers lose.</div>
     </div>
 
     <!-- BLACKJACK -->
@@ -429,7 +434,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
         <button class="go alt" id="bjSplit" hidden>Split</button>
       </div>
       <div class="result" id="bjRes"></div>
-      <div class="rules">Blackjack pays 3 to 2. Dealer stands on all 17s. Double on your first two cards, including after a split. Split any pair (10, J, Q and K count as a pair) up to 4 hands. Split aces get one card each, and 21 after a split pays 1 to 1. Your hand is saved on the server, so if you close the page mid-hand you can pick it back up.</div>
+      <div class="rules">Blackjack pays 3 to 2, and your blackjack beats the dealer's. Six cards without busting is a charlie and wins automatically. Dealer stands on all 17s. Double on your first two cards, including after a split. Split any pair (10, J, Q and K count as a pair) up to 4 hands. Split aces get one card each, and 21 after a split pays 1 to 1. Your hand is saved on the server, so if you close the page mid-hand you can pick it back up.</div>
     </div>
 
     <!-- SLOTS -->
@@ -446,10 +451,10 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
           <div><span>PAT PAT PAT</span><b class="num">8x</b></div>
           <div><span>SACK SACK SACK</span><b class="num">5x</b></div>
           <div><span>Any two TD</span><b class="num">8x</b></div>
-          <div><span>Any one TD</span><b class="num">1.5x</b></div>
+          <div><span>Any one TD</span><b class="num">1.6x</b></div>
         </div>
       </div>
-      <div class="rules">Returns about 96.5% over the long run.</div>
+      <div class="rules">Returns about 98.2% over the long run.</div>
     </div>
 
     <!-- DICE -->
@@ -465,11 +470,13 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       </div>
       <div class="betrow" data-bet="dice"></div>
       <div class="result" id="diRes"></div>
-      <div class="rules">Rolls 0.00 to 99.99. Win if the roll lands under your number. Payout is 99 divided by your number, so the house keeps 1%.</div>
+      <div class="rules">Rolls 0.00 to 99.99. Win if the roll lands under your number. Payout is 99.5 divided by your number, so the house keeps 0.5%.</div>
     </div>
 
     <!-- BUSINESS -->
     <div class="stage" data-game="business" hidden>
+      <div class="skyline"><canvas id="bzSky" width="1040" height="280" aria-label="Your empire skyline"></canvas>
+        <div class="skycap"><b id="bzSkyName">Your empire</b><span class="small" id="bzSkyCount"></span></div></div>
       <div class="bizgrid">
         <div class="bizcard empire">
           <span class="label">Your empire</span>
@@ -492,7 +499,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <div class="panel">
         <h3 class="sbh">Tycoons</h3>
         <div class="scroll"><table class="sttable">
-          <thead><tr><th>Team</th><th class="r">Units</th><th class="r">Per day</th><th class="r">Invested</th><th class="r">Collected</th><th class="r">Clicked</th><th class="r">Profit</th></tr></thead>
+          <thead><tr><th>Team</th><th>Skyline</th><th class="r">Units</th><th class="r">Per day</th><th class="r">Invested</th><th class="r">Collected</th><th class="r">Clicked</th><th class="r">Profit</th></tr></thead>
           <tbody id="bzBoard"></tbody>
         </table></div>
         <p class="small" id="bzTotals"></p>
@@ -584,7 +591,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <div class="betrow" data-bet="rocket"></div>
       <button class="go cashout" id="rkCash" hidden>Cash out</button>
       <div class="result" id="rkRes"></div>
-      <div class="rules">The multiplier starts at 1.00x and climbs (2x in about 12 seconds, 10x in about 38). The rocket blows up at a random point decided on the server the moment you launch, and nobody can see it ahead of time, including the commish. Cash out before it blows to win your bet times the multiplier; if it blows first, you lose the bet. About 3% of launches blow up instantly at 1.00x. Max 100x. Set an auto cash-out and the round settles the instant you launch. The house keeps 3% wherever you cash out.</div>
+      <div class="rules">The multiplier starts at 1.00x and climbs (2x in about 12 seconds, 10x in about 38). The rocket blows up at a random point decided on the server the moment you launch, and nobody can see it ahead of time, including the commish. Cash out before it blows to win your bet times the multiplier; if it blows first, you lose the bet. About 1% of launches blow up instantly at 1.00x. Max 100x. Set an auto cash-out and the round settles the instant you launch. The house keeps 1% wherever you cash out.</div>
     </div>
 
     <!-- CHICKEN -->
@@ -602,7 +609,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
         <button class="go cashout" id="ckCash">Cash out</button>
       </div>
       <div class="result" id="ckRes"></div>
-      <div class="rules">Walk your chicken across the road one lane at a time. Every lane you survive raises the multiplier; get hit and you lose the bet. Cash out whenever you want, or make it all the way across for the top payout. Each step is rolled on the server when you take it. Chance of getting hit per lane: Easy 10%, Medium 20%, Hard 30%, Hardcore 45%. The house keeps 3% wherever you stop. If a round is still open when the commish settles on Monday, it's cashed out where it stands.</div>
+      <div class="rules">Walk your chicken across the road one lane at a time. Every lane you survive raises the multiplier; get hit and you lose the bet. Cash out whenever you want, or make it all the way across for the top payout. Each step is rolled on the server when you take it. Chance of getting hit per lane: Easy 10%, Medium 20%, Hard 30%, Hardcore 45%. The house keeps 2% wherever you stop. If a round is still open when the commish settles on Monday, it's cashed out where it stands.</div>
     </div>
 
     <!-- CRAPS -->
@@ -626,7 +633,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <div class="plinkobox"><canvas id="plinko" width="1040" height="760"></canvas></div>
       <div class="betrow" data-bet="plinko"></div>
       <div class="result" id="plRes"></div>
-      <div class="rules">12 rows. Edges pay 25x, the middle pays 0.4x. Returns about 97.8% over the long run.</div>
+      <div class="rules">12 rows. Edges pay 40x, the middle pays 0.4x. Returns about 99.1% over the long run.</div>
     </div>
   </section>
 
@@ -947,7 +954,7 @@ $("go-slots").addEventListener("click", async () => {
 });
 
 /* ---------- DICE ---------- */
-function diceUI(){ const t=+$("dTarget").value; $("dUnder").textContent=t; $("dChance").textContent=t+"%"; $("dMult").textContent=(99/t).toFixed(2)+"x"; $("dTrack").style.setProperty("--t",t+"%"); }
+function diceUI(){ const t=+$("dTarget").value; $("dUnder").textContent=t; $("dChance").textContent=t+"%"; $("dMult").textContent=(99.5/t).toFixed(2)+"x"; $("dTrack").style.setProperty("--t",t+"%"); }
 $("dTarget").addEventListener("input", diceUI); diceUI();
 $("go-dice").addEventListener("click", async () => {
   if(busy) return;
@@ -1135,6 +1142,99 @@ function bzTick(){
   $("bzCollect").textContent = Math.floor(p) >= 1 ? "Collect " + fmt(Math.floor(p)) : "Collect";
 }
 setInterval(bzTick, 250);
+
+/* ---------- empire skyline ---------- */
+// one building per business owned, laid out the same way every time for a given team
+const SKY = {
+  stand: {w:12, h:12}, mine: {w:22, h:20}, scalp: {w:34, h:22}, book: {w:16, h:62}
+};
+function skyRand(seed){ let x = (seed * 2654435761) >>> 0; return () => { x ^= x << 13; x >>>= 0; x ^= x >> 17; x ^= x << 5; x >>>= 0; return (x % 100000) / 100000; }; }
+function skyLayout(owned, seed){
+  const list = [];
+  ["book","scalp","mine","stand"].forEach(code => { for(let i = 0; i < (owned[code] || 0); i++) list.push(code); });
+  const r = skyRand(seed + 7);
+  // shuffle a little so it reads like a city, but deterministically
+  for(let i = list.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [list[i], list[j]] = [list[j], list[i]]; }
+  return list.map(code => ({code, hs: 0.8 + r() * 0.5, win: Array.from({length: 24}, () => r() < 0.6), tone: r()}));
+}
+function skyDraw(cv, owned, seed, t, mini){
+  const x = cv.getContext("2d"), W = cv.width, H = cv.height, ground = H - (mini ? 6 : 26);
+  const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, "#060b18"); g.addColorStop(0.7, "#122040"); g.addColorStop(1, "#1d2c52");
+  x.fillStyle = g; x.fillRect(0, 0, W, H);
+  if(!mini){
+    const r = skyRand(seed);
+    for(let i = 0; i < 70; i++){ const sx = r() * W, sy = r() * ground * 0.7, tw = 0.5 + 0.5 * Math.sin(t / 700 + i); x.fillStyle = `rgba(233,238,247,${0.25 + 0.55 * tw * r()})`; x.fillRect(sx, sy, 2, 2); }
+    x.fillStyle = "#f6f3ea"; x.beginPath(); x.arc(W - 90, 60, 26, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#060b18"; x.beginPath(); x.arc(W - 78, 52, 24, 0, Math.PI * 2); x.fill();
+  }
+  const list = skyLayout(owned, seed);
+  const natural = list.reduce((a, b) => a + SKY[b.code].w + 4, 0);
+  const tallest = Math.max(1, ...list.map(b => SKY[b.code].h * b.hs));
+  const avail = W - (mini ? 8 : 40), scale = Math.min((ground - (mini ? 6 : 70)) / tallest, natural ? avail / natural : 1, mini ? 3 : 5);
+  let cx = (W - natural * scale) / 2;
+  if(!mini){  // faint far-off city so the lot never looks empty
+    const r2 = skyRand(seed + 99); let fx = 0;
+    while(fx < W){ const fw = 18 + r2() * 34, fh = 20 + r2() * 70; x.fillStyle = "rgba(38,50,76,.55)"; x.fillRect(fx, ground - fh, fw, fh);
+      for(let k = 0; k < 5; k++) if(r2() < 0.35){ x.fillStyle = "rgba(255,226,154,.18)"; x.fillRect(fx + 4 + r2() * (fw - 8), ground - fh + 6 + r2() * (fh - 10), 3, 3); }
+      fx += fw + 2 + r2() * 6; }
+  }
+  x.fillStyle = "#0b1222"; x.fillRect(0, ground, W, H - ground);
+  if(!mini){ x.fillStyle = "#2c9d66"; x.globalAlpha = .5; for(let gx = 0; gx < W; gx += 24) x.fillRect(gx, ground, 18, 2); x.globalAlpha = 1; }
+  if(!list.length){
+    if(!mini){ x.fillStyle = "#8a96ad"; x.font = "500 22px 'Barlow', sans-serif"; x.textAlign = "center"; x.fillText("Empty lot. Buy a Waiver Wire Stand to break ground.", W / 2, ground - 20); }
+    return [];
+  }
+  const spots = [];
+  list.forEach((b, i) => {
+    const d = SKY[b.code], w = d.w * scale, h = d.h * scale * b.hs, left = cx, top = ground - h;
+    const lit = (k) => b.win[k % b.win.length] !== (Math.floor(t / 1700 + i * 0.37 + k) % 11 === 0);
+    if(b.code === "stand"){
+      x.fillStyle = "#7a4b22"; x.fillRect(left, top + h * 0.4, w, h * 0.6);
+      for(let k = 0; k < 4; k++){ x.fillStyle = k % 2 ? "#e9eef7" : "#c4313b"; x.fillRect(left + k * w / 4 - 1, top + h * 0.2, w / 4 + 1, h * 0.22); }
+      x.fillStyle = "#ffb22e"; x.fillRect(left + w * 0.2, top + h * 0.55, w * 0.6, h * 0.18);
+    } else if(b.code === "mine"){
+      x.fillStyle = b.tone > 0.5 ? "#3a3326" : "#433b2b"; x.beginPath(); x.moveTo(left, ground); x.lineTo(left + w * 0.3, top); x.lineTo(left + w * 0.62, top + h * 0.25); x.lineTo(left + w, ground); x.fill();
+      x.fillStyle = "#0c0d10"; x.beginPath(); x.arc(left + w / 2, ground - h * 0.18, w * 0.17, Math.PI, 0); x.rect(left + w / 2 - w * 0.17, ground - h * 0.18, w * 0.34, h * 0.18); x.fill();
+      x.fillStyle = lit(0) ? "#ffe29a" : "#7a5a33"; x.fillRect(left + w / 2 - 2, ground - h * 0.26, 4, 4);
+    } else if(b.code === "scalp"){
+      x.fillStyle = "#26324c"; x.beginPath(); x.ellipse(left + w / 2, ground - h * 0.3, w / 2, h * 0.55, 0, Math.PI, 0); x.fill();
+      x.fillStyle = "#3b4660"; x.fillRect(left, ground - h * 0.3, w, h * 0.3);
+      x.fillStyle = lit(1) ? "#fff6c9" : "#5b6478";
+      x.fillRect(left + 2, ground - h * 1.0, 2, h * 0.55); x.fillRect(left + w - 4, ground - h * 1.0, 2, h * 0.55);
+      x.beginPath(); x.arc(left + 3, ground - h * 1.02, 3, 0, Math.PI * 2); x.arc(left + w - 3, ground - h * 1.02, 3, 0, Math.PI * 2); x.fill();
+      for(let k = 0; k < 6; k++){ x.fillStyle = lit(k + 3) ? "rgba(255,226,154,.85)" : "rgba(255,226,154,.15)"; x.fillRect(left + 4 + k * (w - 8) / 6, ground - h * 0.22, (w - 8) / 6 - 2, h * 0.1); }
+    } else {
+      x.fillStyle = b.tone > 0.5 ? "#1a1f2e" : "#1e2436"; x.fillRect(left, top, w, h);
+      x.fillStyle = "#2a3148"; x.fillRect(left + w * 0.3, top - h * 0.08, w * 0.4, h * 0.08);
+      const cols = 3, rows = Math.max(3, Math.floor(h / (6 * scale)));
+      for(let r = 0; r < rows; r++) for(let c = 0; c < cols; c++){
+        x.fillStyle = lit(r * cols + c) ? "rgba(255,226,154,.9)" : "rgba(255,226,154,.08)";
+        x.fillRect(left + w * 0.15 + c * w * 0.26, top + h * 0.08 + r * (h * 0.86 / rows), w * 0.16, h * 0.86 / rows * 0.45);
+      }
+      if(!mini){ const on = Math.floor(t / 400 + i) % 9 !== 0; x.fillStyle = on ? "#f25c64" : "#5a2129"; x.font = `900 ${Math.max(10, w * 0.9)}px 'Big Shoulders Display', sans-serif`; x.textAlign = "center"; x.fillText("$", left + w / 2, top - h * 0.12); }
+    }
+    spots.push({x: left + w / 2, y: top, code: b.code});
+    cx += (d.w + 4) * scale;
+  });
+  return spots;
+}
+let skyCoins = [], skyLast = 0, skyAcc = 0;
+function skyFrame(t){
+  requestAnimationFrame(skyFrame);
+  const cv = $("bzSky"); if(!cv || document.hidden || document.querySelector('[data-game="business"]').hidden) return;
+  if(t - skyLast < 80) return;   // ~12 fps is plenty
+  const dt = skyLast ? t - skyLast : 80; skyLast = t;
+  const owned = bz?.owned || {}, spots = skyDraw(cv, owned, auth?.team || 1, reduced() ? 0 : t, false);
+  if(reduced() || !spots.length) return;
+  skyAcc += dt / 1000 * Math.min(10, 0.6 + Math.sqrt(Number(bz?.rate || 0)) * 0.8);
+  while(skyAcc >= 1){ skyAcc -= 1; const sp = spots[Math.floor(Math.random() * spots.length)]; skyCoins.push({x: sp.x + (Math.random() * 16 - 8), y: sp.y, vy: -(0.9 + Math.random() * 0.8), life: 0, bill: Math.random() < 0.35}); }
+  const x = cv.getContext("2d");
+  skyCoins = skyCoins.filter(c => (c.life += dt) < 1600);
+  skyCoins.forEach(c => { c.y += c.vy * dt / 16; const a = 1 - c.life / 1600;
+    if(c.bill){ x.fillStyle = `rgba(79,220,142,${a})`; x.fillRect(c.x - 7, c.y - 4, 14, 8); }
+    else { x.fillStyle = `rgba(255,178,46,${a})`; x.beginPath(); x.arc(c.x, c.y, 5, 0, Math.PI * 2); x.fill(); } });
+}
+requestAnimationFrame(skyFrame);
 /* business artwork: little scenes that run faster the more you own */
 const BZ_ART = {
   stand: `<svg viewBox="0 0 120 80" aria-hidden="true"><rect x="0" y="66" width="120" height="14" fill="#1f2a1f"/>
@@ -1195,6 +1295,9 @@ function bzRender(){
   if(!bz) return;
   const r = Number(bz.rate);
   $("bzRate").textContent = money2(r) + "/hr";
+  { const n = Object.values(bz.owned || {}).reduce((a, b) => a + b, 0);
+    $("bzSkyName").textContent = (myTeam()?.name || "Your") + (myTeam() ? "'s empire" : " empire");
+    $("bzSkyCount").textContent = n ? n + (n === 1 ? " building" : " buildings") + " · " + money2(r * 24) + " a day" : "No buildings yet"; }
   $("bzDay").textContent = r > 0 ? money2(r * 24) + " a day · pays back in about 14 days" : "Buy a business to start earning";
   $("bzWeek").textContent = "This week: " + fmt(bz.weekMade) + " of " + fmt(bz.weekCap) + " cap";
   const clicks = bz.clicksToday + bzQueue, capClicks = bz.clickCap * 100;
@@ -1224,12 +1327,13 @@ async function loadBiz(){
     const st = await rpc("biz_stats", {});
     const me = auth?.team;
     $("bzBoard").innerHTML = st.board.map(b => { const profit = b.collected + b.clicked - b.invested;
-      return `<tr class="${b.id === me ? "me" : ""}"><td class="tname">${esc(b.name)}<small>@${esc(b.owner)}</small></td><td class="r num">${b.units || "—"}</td><td class="r num">${b.rate ? money2(b.rate) : "—"}</td>
+      return `<tr class="${b.id === me ? "me" : ""}"><td class="tname">${esc(b.name)}<small>@${esc(b.owner)}</small></td><td>${b.units ? `<canvas class="minisky" width="240" height="68" data-sky="${b.id}"></canvas>` : `<span class="small">Empty lot</span>`}</td><td class="r num">${b.units || "—"}</td><td class="r num">${b.rate ? money2(b.rate) : "—"}</td>
         <td class="r num">${b.invested ? fmt(b.invested) : "—"}</td><td class="r num">${b.collected ? fmt(b.collected) : "—"}</td><td class="r num">${b.clicked ? fmt(b.clicked) : "—"}</td>
         <td class="r num ${profit>0?"pos":profit<0?"neg":""}">${profit ? sfmt(profit) : "—"}</td></tr>`; }).join("");
     $("bzTotals").textContent = "New FAAB created this week: " + fmt(st.totals.mintedWeek) + " · all time: " + fmt(st.totals.minted) + " · invested in businesses: " + fmt(st.totals.invested);
     $("bzRecent").innerHTML = st.recent.length ? st.recent.map(r => `<li><span><b>${esc(r.name)}</b> · ${esc(r.detail)}</span><span class="num neg">${fmt(-r.amount)}</span><span class="d">${new Date(r.created_at).toLocaleString("en-US",{timeZone:"America/New_York",weekday:"short",hour:"numeric",minute:"2-digit"})}</span></li>`).join("")
       : `<li class="empty">Nobody has bought a business yet.</li>`;
+    document.querySelectorAll("canvas[data-sky]").forEach(c => { const b = st.board.find(x => String(x.id) === c.dataset.sky); skyDraw(c, b?.owned || {}, Number(c.dataset.sky), 0, true); });
   } catch(e){}
 }
 $("bzTypes").addEventListener("click", async e => {
@@ -1512,7 +1616,7 @@ rkDraw();
 /* ---------- CHICKEN ---------- */
 let ck = {state:"idle"}, ckLevel = "easy", ckBusy = false;
 const CK = {easy:{s:0.90,n:15}, medium:{s:0.80,n:12}, hard:{s:0.70,n:10}, hardcore:{s:0.55,n:8}};
-const ckMult = (lv, k) => k <= 0 ? 1 : Math.min(100, Math.floor(0.97 / Math.pow(CK[lv].s, k) * 100) / 100);
+const ckMult = (lv, k) => k <= 0 ? 1 : Math.min(100, Math.floor(0.98 / Math.pow(CK[lv].s, k) * 100) / 100);
 function ckRender(hitLane){
   const lv = ck.level || ckLevel, n = CK[lv].n, step = ck.step || 0;
   let html = `<div class="lane curb${step === 0 && ck.state !== "hit" ? " here" : ""}"><span class="lm">Start</span>${step === 0 && ck.state !== "hit" ? '<span class="chick" aria-label="Your chicken">🐔</span>' : ""}</div>`;
@@ -1585,7 +1689,7 @@ $("go-craps").addEventListener("click", async () => {
 });
 
 /* ---------- PLINKO ---------- */
-const PM=[25,8,3.5,1.8,1.2,0.6,0.4,0.6,1.2,1.8,3.5,8,25], ROWS=12;
+const PM=[40,9,3.5,1.8,1.2,0.6,0.4,0.6,1.2,1.8,3.5,9,40], ROWS=12;
 const pc=$("plinko"), px=pc.getContext("2d"); let balls=[], plAnim=false, inflight=0;
 function geo(){ const W=pc.width,H=pc.height, sp=W/(ROWS+3), top=50, rowH=(H-top-110)/ROWS; return {W,H,sp,top,rowH,cx:W/2}; }
 function drawPlinko(){

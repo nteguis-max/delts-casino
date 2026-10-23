@@ -181,6 +181,7 @@ begin
     else null end;
   if mult is null then raise exception 'Unknown bet.'; end if;
   pay := p_bet * mult;
+  if n = 0 and p_pick in ('red','black','odd','even','low','high') then pay := floor(p_bet / 2.0); end if;  -- la partage: zero returns half
   lbl := case p_pick when 'num' then '#' || p_num when 'low' then '1 to 18' when 'high' then '19 to 36'
          when 'd1' then '1st 12' when 'd2' then '2nd 12' when 'd3' then '3rd 12' else initcap(p_pick) end;
   perform _apply(p_team, pay - p_bet, p_bet);
@@ -201,7 +202,7 @@ begin
   td := (select count(*) from unnest(r) u where u = 'TD');
   if r[1] = r[2] and r[2] = r[3] then
     mult := case r[1] when 'TD' then 150 when '2PT' then 40 when 'FG' then 16 when 'PAT' then 8 else 5 end;
-  elsif td = 2 then mult := 8; elsif td = 1 then mult := 1.5; end if;
+  elsif td = 2 then mult := 8; elsif td = 1 then mult := 1.6; end if;
   pay := floor(p_bet * mult);
   perform _apply(p_team, pay - p_bet, p_bet);
   perform _log(p_team, 'slots', p_bet, pay, array_to_string(r, ' '));
@@ -215,7 +216,7 @@ begin
   t := _auth(p_team, p_pin); if t.id is null then return json_build_object('error', 'Wrong PIN'); end if; perform _guard(t, p_bet);
   if p_target < 2 or p_target > 95 then raise exception 'Target must be 2 to 95.'; end if;
   roll := _rnd(10000);
-  if roll < p_target * 100 then pay := floor(p_bet * 99.0 / p_target); end if;
+  if roll < p_target * 100 then pay := floor(p_bet * 99.5 / p_target); end if;
   perform _apply(p_team, pay - p_bet, p_bet);
   perform _log(p_team, 'dice', p_bet, pay, 'rolled ' || to_char(roll / 100.0, 'FM90.00') || ' under ' || p_target);
   return json_build_object('roll', round(roll / 100.0, 2), 'payout', pay, 'balance', _bal(p_team));
@@ -224,7 +225,7 @@ end $$;
 create or replace function play_plinko(p_team int, p_pin text, p_bet int) returns json
 language plpgsql security definer set search_path = public as $$
 declare t teams; path int[] := '{}'; k int := 0; i int; b int;
-  m numeric[] := array[25,8,3.5,1.8,1.2,0.6,0.4,0.6,1.2,1.8,3.5,8,25]; pay int;
+  m numeric[] := array[40,9,3.5,1.8,1.2,0.6,0.4,0.6,1.2,1.8,3.5,9,40]; pay int;
 begin
   t := _auth(p_team, p_pin); if t.id is null then return json_build_object('error', 'Wrong PIN'); end if; perform _guard(t, p_bet);
   for i in 1..12 loop b := _rnd(2); path := path || b; k := k + b; end loop;
@@ -331,8 +332,9 @@ begin
     x := h.hands -> i; pv := _bj_val(x -> 'c'); pay := 0;
     if pv > 21 then note := 'bust ' || pv;
     elsif is_nat and not dbj then pay := floor((x ->> 'bet')::int * 2.5); note := 'blackjack';
-    elsif is_nat and dbj then pay := (x ->> 'bet')::int; note := 'push, both blackjack';
+    elsif is_nat and dbj then pay := floor((x ->> 'bet')::int * 2.5); note := 'blackjack beats dealer blackjack';
     elsif dbj then note := 'dealer blackjack';
+    elsif jsonb_array_length(x -> 'c') >= 6 then pay := (x ->> 'bet')::int * 2; note := 'six-card charlie';
     elsif dv > 21 then pay := (x ->> 'bet')::int * 2; note := pv || ', dealer bust';
     elsif pv > dv then pay := (x ->> 'bet')::int * 2; note := pv || ' vs ' || dv;
     elsif pv = dv then pay := (x ->> 'bet')::int; note := 'push ' || pv;
@@ -358,7 +360,7 @@ begin
   select * into h from bj_hands where team_id = p_team;
   n := jsonb_array_length(h.hands);
   x := h.hands -> h.active;
-  if _bj_val(x -> 'c') >= 21 or coalesce((x ->> 'ace')::boolean, false) then
+  if _bj_val(x -> 'c') >= 21 or jsonb_array_length(x -> 'c') >= 6 or coalesce((x ->> 'ace')::boolean, false) then
     h.hands := jsonb_set(h.hands, array[h.active::text, 'done'], 'true');
   end if;
   for i in 0 .. n - 1 loop
@@ -1572,7 +1574,7 @@ end $$;
 
 -- ---------- Rocket (crash): the multiplier climbs until the rocket blows up; cash out first ----------
 -- Each round's crash point is drawn on the server when you launch and stays secret until the round ends.
--- P(crash >= m) = 0.97 / m, so the house keeps 3% at any cash-out target. Capped at 100x.
+-- P(crash >= m) = 0.99 / m, so the house keeps 1% at any cash-out target. Capped at 100x.
 -- The multiplier grows as e^(0.06 * seconds): 2x at ~11.6s, 10x at ~38s, 100x at ~77s.
 create table if not exists rk_rounds (
   team_id int primary key references teams(id),
@@ -1611,7 +1613,7 @@ begin
   perform _guard(t, p_bet);
   perform _apply(p_team, -p_bet, p_bet);
   u := (_rnd(1000000) + 1) / 1000000.0;                  -- (0, 1]
-  cr := least(100, greatest(1, floor(0.97 / u * 100) / 100));
+  cr := least(100, greatest(1, floor(0.99 / u * 100) / 100));
   if p_auto is not null then
     p_auto := floor(p_auto * 100) / 100;
     pay := case when cr >= p_auto then floor(p_bet * p_auto)::int else 0 end;
@@ -1702,7 +1704,7 @@ create or replace function _ck_level(p text, out survive numeric, out lanes int)
   select case p when 'easy' then 0.90 when 'medium' then 0.80 when 'hard' then 0.70 when 'hardcore' then 0.55 end,
          case p when 'easy' then 15 when 'medium' then 12 when 'hard' then 10 when 'hardcore' then 8 end $$;
 create or replace function _ck_mult(p_level text, p_step int) returns numeric language sql immutable as $$
-  select case when p_step <= 0 then 1 else least(100, floor(0.97 / power((select survive from _ck_level(p_level)), p_step) * 100) / 100) end $$;
+  select case when p_step <= 0 then 1 else least(100, floor(0.98 / power((select survive from _ck_level(p_level)), p_step) * 100) / 100) end $$;
 grant execute on function _ck_level(text), _ck_mult(text,int) to anon, authenticated;
 
 create or replace function _ck_view(r ck_rounds) returns json language sql stable as $$
@@ -2014,6 +2016,7 @@ language sql stable security definer set search_path = public as $$
       select t.id, t.name, t.owner,
         round(_biz_rate(t.id) * 24, 2) as rate,     -- dollars per day
         coalesce((select sum(qty) from biz_owned where team_id = t.id), 0)::int as units,
+        coalesce((select json_object_agg(code, qty) from biz_owned where team_id = t.id and qty > 0), '{}'::json) as owned,
         coalesce((select -sum(amount) from biz_ledger where team_id = t.id and kind = 'buy'), 0)::int as invested,
         coalesce((select sum(amount) from biz_ledger where team_id = t.id and kind = 'collect'), 0)::int as collected,
         coalesce((select sum(amount) from biz_ledger where team_id = t.id and kind = 'click'), 0)::int as clicked
