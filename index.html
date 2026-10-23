@@ -1850,7 +1850,8 @@ $("cWr").addEventListener("submit", async e => {
   e.preventDefault();
   const d = $("cWrDay").value, h = parseInt($("cWrHigh").value);
   if(!d || !Number.isFinite(h)) return toast("Enter the day and the official high.");
-  try { await rpc("admin_wr_settle", {p_pin: adminPin, p_day: d, p_high: h}); toast("Warroad " + d + " settled at " + h + "°."); loadMarkets(); refresh(); }
+  try { const r = await rpc("admin_wr_settle", {p_pin: adminPin, p_day: d, p_high: h});
+    toast("Warroad " + d + (r.was != null ? " corrected from " + r.was + "° to " + h + "°, " + r.regraded + " bets regraded." : " settled at " + h + "°.")); loadMarkets(); refresh(); }
   catch(err){ toast(err.message); }
 });
 let payArmed = false;
