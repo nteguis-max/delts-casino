@@ -226,11 +226,35 @@ input[type=range]{width:100%;accent-color:var(--turf)}
 .clickbar{width:100%;height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden}
 .clickbar i{display:block;height:100%;width:0;background:var(--amber)}
 .biztypes{display:flex;flex-direction:column;gap:8px}
-.biztype{display:grid;grid-template-columns:minmax(0,2fr) auto auto auto;gap:12px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
-.biztype > div:first-child{display:flex;flex-direction:column;gap:2px;min-width:0}
-.bizmeta{display:flex;flex-direction:column;align-items:flex-end}
+.biztype{display:grid;grid-template-columns:120px minmax(0,2fr) auto auto auto;gap:12px;align-items:center;background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.bizart{position:relative;width:120px;height:80px;border-radius:5px;overflow:hidden;background:#101826;filter:grayscale(.85) brightness(.55);transition:filter .3s}
+.biztype.on .bizart{filter:none}
+.bizart svg{width:100%;height:100%;display:block}
+.bizsign{position:absolute;top:4px;right:4px;font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:1px 5px;border-radius:3px;background:rgba(10,17,32,.8);color:var(--muted)}
+.biztype.on .bizsign{color:var(--win)}
+.bizinfo{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bizlive{font-size:12px;color:var(--muted)}
+.biztype.on .bizlive{color:var(--win)}
+.bizcoin{position:absolute;bottom:6px;width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe29a,#ffb22e 55%,#c97a0c);box-shadow:0 0 6px rgba(255,178,46,.6);
+  font:800 8px/12px sans-serif;color:#3b2400;text-align:center;pointer-events:none;animation:bzrise 1.6s ease-out forwards}
+.bizcoin.bill{width:16px;height:9px;border-radius:2px;background:#4fdc8e;box-shadow:0 0 6px rgba(79,220,142,.5);line-height:9px;color:#0d3a22}
+@keyframes bzrise{0%{transform:translate(0,0) scale(.6);opacity:0}15%{opacity:1}100%{transform:translate(var(--dx),-62px) scale(1);opacity:0}}
+.biztype.on .anim.bob{animation:bzbob var(--spd) ease-in-out infinite}
+.biztype.on .anim.cart{animation:bzcart calc(var(--spd) * 2.2) ease-in-out infinite}
+.biztype.on .anim.glow{animation:bzglow calc(var(--spd) * 1.2) ease-in-out infinite}
+.biztype.on .anim.flip{animation:bzflip var(--spd) ease-in-out infinite;transform-origin:60px 48px}
+.biztype.on .anim.count{animation:bzcount calc(var(--spd) * .8) steps(2) infinite}
+.biztype.on .anim.neon{animation:bzneon 2.4s steps(1) infinite}
+@keyframes bzbob{50%{transform:translateY(-3px)}}
+@keyframes bzcart{0%{transform:translateX(38px);opacity:0}12%{opacity:1}88%{opacity:1}100%{transform:translateX(100px);opacity:0}}
+@keyframes bzglow{50%{opacity:.35}}
+@keyframes bzflip{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg) translateY(-3px)}}
+@keyframes bzcount{50%{transform:translateY(-3px)}}
+@keyframes bzneon{0%,100%{opacity:1}8%{opacity:.2}12%{opacity:1}60%{opacity:.4}62%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.biztype .anim{animation:none!important}}
 .biztype .go{font-size:15px;padding:8px 12px;white-space:nowrap}
-@media (max-width:560px){.biztype{grid-template-columns:1fr 1fr}.biztype > div:first-child{grid-column:1/-1}.biztype .go{grid-column:1/-1}.bizmeta{align-items:flex-start}}
+.bizmeta{display:flex;flex-direction:column;align-items:flex-end}
+@media (max-width:620px){.biztype{grid-template-columns:120px minmax(0,1fr)}.bizart{grid-row:span 2}.bizinfo{grid-column:2}.biztype .bizmeta{display:none}.biztype .go{grid-column:2}}
 @media (prefers-reduced-motion:reduce){.coin.hit,.pop.go{animation:none}.pop.go{opacity:1}}
 .sttotals{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 @media (max-width:560px){.sttotals{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -1093,7 +1117,7 @@ $("go-sportsbook").addEventListener("click", async () => {
 setInterval(() => { if(!document.hidden && !document.querySelector('[data-game="sportsbook"]').hidden) loadSportsbook(true); }, 60000);
 
 /* ---------- BUSINESS ---------- */
-let bz = null, bzAt = 0, bzTypes = [], bzQueue = 0, bzSent = 0, bzFlush = 0, bzBusy = false;
+let bzSig = "", bzOpened = Date.now(), bz = null, bzAt = 0, bzTypes = [], bzQueue = 0, bzSent = 0, bzFlush = 0, bzBusy = false;
 const money2 = n => "$" + Number(n).toLocaleString("en-US", {minimumFractionDigits:2, maximumFractionDigits:2});
 const bzCost = (base, q) => Math.round(base * Math.pow(1.15, q));
 function bzPendingNow(){
@@ -1111,6 +1135,62 @@ function bzTick(){
   $("bzCollect").textContent = Math.floor(p) >= 1 ? "Collect " + fmt(Math.floor(p)) : "Collect";
 }
 setInterval(bzTick, 250);
+/* business artwork: little scenes that run faster the more you own */
+const BZ_ART = {
+  stand: `<svg viewBox="0 0 120 80" aria-hidden="true"><rect x="0" y="66" width="120" height="14" fill="#1f2a1f"/>
+    <rect x="24" y="38" width="72" height="30" rx="2" fill="#7a4b22"/><rect x="24" y="38" width="72" height="6" fill="#5c3818"/>
+    <path d="M18 22h84l-6 14H24z" fill="#e9eef7"/><path d="M18 22h14l-2 14h-8zM46 22h14l-1 14h-12zM74 22h14l1 14h-12z" fill="#c4313b"/>
+    <rect x="22" y="22" width="4" height="46" fill="#5c3818"/><rect x="94" y="22" width="4" height="46" fill="#5c3818"/>
+    <rect x="38" y="47" width="44" height="12" rx="2" fill="#ffb22e"/><text x="60" y="56.5" text-anchor="middle" font-size="8" font-weight="800" fill="#3b2400" font-family="sans-serif">WAIVERS</text>
+    <g class="anim bob"><circle cx="60" cy="31" r="5" fill="#f2c79b"/><rect x="55" y="34" width="10" height="5" rx="2" fill="#2c9d66"/></g></svg>`,
+  mine: `<svg viewBox="0 0 120 80" aria-hidden="true"><path d="M0 80V40l22-18 18 10 22-24 26 20 32 8v44z" fill="#3a3326"/>
+    <path d="M36 80V52a14 14 0 0 1 28 0v28z" fill="#0c0d10"/><path d="M33 80V52a17 17 0 0 1 34 0v28h-4V52a13 13 0 0 0-26 0v28z" fill="#7a5a33"/>
+    <rect x="0" y="74" width="120" height="2" fill="#8a96ad"/><rect x="0" y="78" width="120" height="2" fill="#8a96ad"/>
+    <g class="anim cart"><rect x="0" y="62" width="22" height="11" rx="2" fill="#5b6478"/><circle cx="5" cy="74" r="3" fill="#26324c"/><circle cx="17" cy="74" r="3" fill="#26324c"/>
+      <circle cx="6" cy="62" r="3.2" fill="#ffb22e"/><circle cx="12" cy="60.5" r="3.6" fill="#ffd27a"/><circle cx="17.5" cy="62" r="3" fill="#ffb22e"/></g>
+    <circle cx="50" cy="50" r="2" fill="#ffe29a" class="anim glow"/></svg>`,
+  scalp: `<svg viewBox="0 0 120 80" aria-hidden="true"><ellipse cx="60" cy="64" rx="56" ry="14" fill="#1b2a44"/>
+    <path d="M8 62c0-22 24-36 52-36s52 14 52 36" fill="none" stroke="#5b6478" stroke-width="5"/>
+    <path d="M18 60c0-16 19-26 42-26s42 10 42 26" fill="none" stroke="#3b4660" stroke-width="3"/>
+    <rect x="14" y="18" width="3" height="18" fill="#8a96ad"/><rect x="103" y="18" width="3" height="18" fill="#8a96ad"/>
+    <circle cx="15.5" cy="17" r="3" fill="#fff6c9" class="anim glow"/><circle cx="104.5" cy="17" r="3" fill="#fff6c9" class="anim glow"/>
+    <g class="anim flip"><rect x="46" y="40" width="28" height="16" rx="2" fill="#ffb22e"/><path d="M53 40v16" stroke="#3b2400" stroke-dasharray="2 2"/>
+      <text x="64" y="51" text-anchor="middle" font-size="7" font-weight="800" fill="#3b2400" font-family="sans-serif">VIP</text></g></svg>`,
+  book: `<svg viewBox="0 0 120 80" aria-hidden="true"><rect width="120" height="80" fill="#14101a"/>
+    <path d="M60 0v12" stroke="#5b6478" stroke-width="1.5"/><path d="M48 12h24l6 10H42z" fill="#2c9d66"/>
+    <path d="M42 22h36L96 80H24z" fill="rgba(255,226,154,.10)" class="anim glow"/>
+    <rect x="22" y="56" width="76" height="6" rx="1" fill="#5c3818"/><rect x="26" y="62" width="4" height="18" fill="#3b2614"/><rect x="90" y="62" width="4" height="18" fill="#3b2614"/>
+    <g fill="#4fdc8e"><rect x="34" y="47" width="16" height="9" rx="1"/><rect x="35" y="43" width="16" height="4" rx="1" fill="#2c9d66"/></g>
+    <g class="anim count"><rect x="58" y="48" width="18" height="8" rx="1" fill="#4fdc8e"/><rect x="60" y="45" width="18" height="3.5" rx="1" fill="#7be7aa"/></g>
+    <text x="88" y="30" font-size="14" font-weight="900" fill="#c4313b" font-family="sans-serif" class="anim neon">$</text></svg>`,
+};
+// money floating up out of each business, faster the more you own; plus live per-business tickers
+const BZ_STEP = 300;
+let bzAcc = {};
+setInterval(() => {
+  if(!bz || document.hidden || document.querySelector('[data-game="business"]').hidden) return;
+  const owned = bz.owned || {}, secs = (Date.now() - bzOpened) / 1000;
+  bzTypes.forEach(t => {
+    const q = owned[t.code] || 0; if(!q) return;
+    const card = document.querySelector(`.biztype[data-code="${t.code}"]`); if(!card) return;
+    const perSec = t.rate * q / 3600;
+    const live = card.querySelector("[data-live]"); if(live){ const v = perSec * secs; live.textContent = "+" + (v < 1 ? "$" + v.toFixed(4) : money2(v)) + " since you opened this page"; }
+    if(reduced()) return;
+    // one coin per "chunk" of earnings; chunk shrinks with the business size so small ones still sparkle
+    bzAcc[t.code] = (bzAcc[t.code] || 0) + BZ_STEP / 1000 * Math.min(6, 0.35 * Math.sqrt(q) * (1 + Math.log10(t.base_cost / 200)));
+    while(bzAcc[t.code] >= 1){
+      bzAcc[t.code] -= 1;
+      const art = card.querySelector(".bizart"); if(!art) break;
+      const c = document.createElement("span");
+      c.className = "bizcoin" + (Math.random() < 0.35 ? " bill" : "");
+      c.textContent = Math.random() < 0.35 ? "$" : "";
+      c.style.left = (18 + Math.random() * 64) + "%";
+      c.style.setProperty("--dx", (Math.random() * 30 - 15) + "px");
+      art.appendChild(c); setTimeout(() => c.remove(), 1600);
+    }
+  });
+}, BZ_STEP);
+
 function bzRender(){
   if(!bz) return;
   const r = Number(bz.rate);
@@ -1122,11 +1202,18 @@ function bzRender(){
   $("bzClickFill").style.width = Math.min(100, clicks / Math.max(1, capClicks) * 100) + "%";
   $("bzCoin").disabled = bz.clickPaidToday >= bz.clickCap;
   const owned = bz.owned || {};
-  $("bzTypes").innerHTML = bzTypes.map(t => { const q = owned[t.code] || 0, cost = bzCost(t.base_cost, q), can = shownBal() >= cost && isLive();
-    return `<div class="biztype"><div><b>${esc(t.name)}</b><span class="small">${esc(t.blurb || "")}</span></div>
-      <div class="bizmeta"><span class="label">Owned</span><b class="num">${q}</b></div>
-      <div class="bizmeta"><span class="label">Earns</span><b class="num">${money2(t.rate * 24)}/day</b></div>
-      <button class="go alt" data-buy="${t.code}" ${can ? "" : "disabled"}>Buy · ${fmt(cost)}</button></div>`; }).join("");
+  const sig = bzTypes.map(t => t.code + ":" + (owned[t.code] || 0)).join(",") + "|" + Math.floor(shownBal()) + "|" + isLive();
+  if(sig !== bzSig){
+    bzSig = sig;
+    $("bzTypes").innerHTML = bzTypes.map(t => { const q = owned[t.code] || 0, cost = bzCost(t.base_cost, q), can = shownBal() >= cost && isLive();
+      return `<div class="biztype${q ? " on" : ""}" data-code="${t.code}" style="--spd:${q ? Math.max(0.35, 2.4 / Math.sqrt(q)).toFixed(2) : 0}s">
+        <div class="bizart">${BZ_ART[t.code] || ""}<span class="bizsign">${q ? "Open" : "Closed"}</span></div>
+        <div class="bizinfo"><b>${esc(t.name)}</b><span class="small">${esc(t.blurb || "")}</span>
+          <span class="bizlive num" data-live="${t.code}">${q ? "+$0.0000 since you opened this page" : "Buy one to start the money"}</span></div>
+        <div class="bizmeta"><span class="label">Owned</span><b class="num">${q}</b></div>
+        <div class="bizmeta"><span class="label">Earning</span><b class="num">${money2(t.rate * 24 * Math.max(q, 1))}/day</b>${q ? "" : '<span class="small">each</span>'}</div>
+        <button class="go alt" data-buy="${t.code}" ${can ? "" : "disabled"}>Buy · ${fmt(cost)}</button></div>`; }).join("");
+  }
   bzTick();
 }
 async function loadBiz(){
