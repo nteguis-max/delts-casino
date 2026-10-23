@@ -338,6 +338,28 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
 .picker button.sel{border-color:var(--amber)}
 #cSteps{display:flex;flex-direction:column;gap:6px;margin:4px 0 10px}
 #cSteps p{margin:0}
+#dropZone{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+#dropZone:empty{display:none}
+.primebar{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 14px;font-size:14px}
+.primebar .live{white-space:nowrap;color:var(--loss);font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase;display:flex;align-items:center;gap:6px}
+.primebar .live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--loss)}
+@media (prefers-reduced-motion:no-preference){.primebar .live::before{animation:blink 1.2s ease-in-out infinite}}
+@keyframes blink{50%{opacity:.25}}
+.primebar .sc{white-space:nowrap;font-family:var(--mono);font-weight:700}
+.primebar .pay{margin-left:auto;color:var(--muted);font-size:13px}
+@media (max-width:560px){.primebar .pay{margin-left:0;flex-basis:100%}}
+.dropbar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border-radius:8px;padding:12px 14px;border:2px solid var(--amber);background:linear-gradient(90deg,#4a3405,#2a1d05)}
+.dropbar.fg{border-color:var(--turf);background:linear-gradient(90deg,#0f3a26,#0b2419)}
+.dropbar .ball{font-size:28px;line-height:1;flex:none}
+.dropbar b{display:block;font-family:var(--display);text-transform:uppercase;font-size:21px;letter-spacing:.03em;color:var(--amber)}
+.dropbar.fg b{color:var(--win)}
+.dropbar small{color:#cfd6e4;font-size:13px}
+.dropbar .sgo{margin-left:auto;background:var(--amber);color:#1a1205;font-weight:800;padding:9px 16px;border-radius:6px;white-space:nowrap;font-family:var(--display);font-size:18px;text-transform:uppercase}
+.dropbar.fg .sgo{background:var(--turf);color:var(--turf-ink)}
+.dropbar.got{border-style:dashed;opacity:.7;background:var(--surface)}
+.dropbar.got .sgo{background:var(--surface-2);color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.dropbar:not(.got){animation:droppulse 1.6s ease-in-out infinite}}
+@keyframes droppulse{50%{box-shadow:0 0 0 4px rgba(255,178,46,.25)}}
 .spinbar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:linear-gradient(90deg,#3a2a06,#1b2440 60%);border:1px solid #6b5216;border-radius:8px;padding:10px 14px;margin-bottom:10px}
 .spinbar b{display:block;font-family:var(--display);text-transform:uppercase;font-size:19px;letter-spacing:.03em;color:var(--amber)}
 .spinbar small{color:var(--muted);font-size:13px}
@@ -400,6 +422,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
   </section>
 
   <section id="gameSec" hidden>
+    <div id="dropZone"></div>
     <button class="spinbar" id="spinBar" hidden><span class="spinico" aria-hidden="true"></span><span><b id="spinBarT">Free daily spin</b><small id="spinBarS"></small></span><span class="sgo" id="spinBarGo">Spin</span></button>
     <nav class="sections" aria-label="Sections">
       <button data-sec="casino" aria-pressed="true"><b>Casino</b><small>8 games</small></button>
@@ -692,11 +715,13 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
       <label id="cCapWrap" hidden>Max parlay payout<input id="cCap" type="number" min="100"></label>
       <label id="cClickWrap" hidden>Clicker cap $/day<input id="cClick" type="number" min="0"></label>
       <label id="cBizWrap" hidden>Business cap $/week<input id="cBiz" type="number" min="0"></label>
+      <label id="cTdWrap" hidden>Touchdown drop $<input id="cTd" type="number" min="0"></label>
+      <label id="cFgWrap" hidden>Field goal drop $<input id="cFg" type="number" min="0"></label>
       <label id="cSgpWrap" hidden>Same-game parlay pays %<input id="cSgp" type="number" min="10" max="100"></label>
       <button class="go alt" id="cSave" style="font-size:16px;padding:8px 14px">Save rules</button>
     </div>
     <div class="small" id="cSteps">
-      <p><b>Monday, before 8 PM:</b> in Sleeper (Commissioner tools, edit FAAB budgets), set each team to its "Set Sleeper to" number, then press Mark settled. That locks in this week's rebates as owed.</p>
+      <p><b>Monday night, once MNF ends</b> (the casino closes itself when the last Monday game goes final): in Sleeper (Commissioner tools, edit FAAB budgets), set each team to its "Set Sleeper to" number, then press Mark settled. That locks in this week's rebates as owed.</p>
       <p><b>Wednesday, after waivers clear at 3 AM:</b> type each team's new Sleeper FAAB into "Sleeper base" and press Save Sleeper bases. Then set each team that's owed a rebate to its "Sleeper + rebate" number in Sleeper, and press Pay rebates.</p>
     </div>
     <div class="scroll"><table>
@@ -780,8 +805,10 @@ const isLive = () => cfg && cfg.open && !cfg.blackout;
 
 async function refresh(){
   try {
-    const [c, t, f] = await Promise.all([view("v_config"), view("v_teams","&order=id"), view("v_feed")]);
+    const [c, t, f, dr] = await Promise.all([view("v_config"), view("v_teams","&order=id"), view("v_feed"),
+      Promise.all([view("v_drops"), view("v_prime_live")]).catch(() => null)]);
     cfg = c[0] || null; teams = t; feed = f;
+    if(dr){ dropsSeen(dr[0]); drops = dr[0]; primeLive = dr[1]; renderDrops(); }
     if(auth && pendingReveal === 0 && !busy){ const m = myTeam(); if(m) balance = m.available; }
     $("notice").hidden = true;
   } catch(e){ showNotice("Can't reach the casino right now. Retrying…"); }
@@ -816,10 +843,10 @@ $("pinForm").addEventListener("submit", async e => {
     auth = {team: pickTeam.id, pin}; balance = r.balance;
     try { localStorage.setItem("delts-auth", JSON.stringify(auth)); } catch(e){}
     $("pinForm").hidden = true; pickTeam = null;
-    await refresh(); loadBj(); loadSpin();
+    await refresh(); loadBj(); loadSpin(); loadDropMine();
   } catch(err){ toast(err.message); }
 });
-$("logout").addEventListener("click", () => { auth = null; balance = null; try{ localStorage.removeItem("delts-auth"); }catch(e){} render(); loadSpin(); });
+$("logout").addEventListener("click", () => { auth = null; balance = null; try{ localStorage.removeItem("delts-auth"); }catch(e){} render(); loadSpin(); dropMine = null; renderDrops(); });
 
 /* ---------- bet controls ---------- */
 const betVals = {roulette:100, blackjack:100, slots:50, dice:100, plinko:50, craps:100, sportsbook:100, markets:100, rocket:50, chicken:50};
@@ -843,7 +870,7 @@ const getBet = g => parseInt($("bet-" + g).value);
 function preCheck(bet){
   if(!auth) return "Pick your team first.";
   if(!cfg?.open) return "The casino is closed right now.";
-  if(cfg.blackout) return "Betting is closed from 8 PM Monday until waivers clear at 3 AM Wednesday (Eastern).";
+  if(cfg.blackout) return "Betting is closed from the end of Monday Night Football until waivers clear at 3 AM Wednesday (Eastern).";
   if(!Number.isInteger(bet) || bet < 1) return "Minimum bet is $10.";
   return null;  // the server checks the rest
 }
@@ -1777,6 +1804,8 @@ async function loadAdmin(){
   $("cWr").hidden = false;
   const hasBiz = cfg && cfg.biz_week_cap != null; $("cClickWrap").hidden = $("cBizWrap").hidden = !hasBiz;
   if(hasBiz){ $("cClick").value = cfg.click_daily_cap; $("cBiz").value = cfg.biz_week_cap; }
+  const hasDrops = cfg && cfg.drop_td != null; $("cTdWrap").hidden = $("cFgWrap").hidden = !hasDrops;
+  if(hasDrops){ $("cTd").value = cfg.drop_td; $("cFg").value = cfg.drop_fg; }
   const hasSgp = cfg && cfg.sgp_pct != null; $("cSgpWrap").hidden = !hasSgp; if(hasSgp) $("cSgp").value = cfg.sgp_pct;
   const owedTotal = overview.reduce((a,t) => a + (t.owed || 0), 0);
   $("cPay").hidden = !(owedTotal > 0); $("cPay").textContent = owedTotal > 0 ? "Pay rebates (" + fmt(owedTotal) + ")" : "Pay rebates";
@@ -1795,6 +1824,7 @@ $("adminLogin").addEventListener("submit", async e => {
 $("cSave").addEventListener("click", async () => {
   try { await rpc("admin_set_config", {p_pin: adminPin, p_open: $("cOpen").value === "1", p_max: parseInt($("cMax").value)||1, p_daily: (parseInt($("cDay").value) || 0) <= 0 ? NO_LIMIT : parseInt($("cDay").value)});
     if(cfg && cfg.biz_week_cap != null) await rpc("admin_set_business", {p_pin: adminPin, p_click_cap: Math.max(0, parseInt($("cClick").value) || 0), p_week_cap: Math.max(0, parseInt($("cBiz").value) || 0)});
+    if(cfg && cfg.drop_td != null) await rpc("admin_set_drops", {p_pin: adminPin, p_td: Math.max(0, parseInt($("cTd").value) || 0), p_fg: Math.max(0, parseInt($("cFg").value) || 0)});
     if(cfg && cfg.sgp_pct != null) await rpc("admin_set_sgp", {p_pin: adminPin, p_pct: Math.max(10, Math.min(100, parseInt($("cSgp").value) || 90))});
     if(cfg && cfg.parlay_max_payout != null) await rpc("admin_set_parlay_cap", {p_pin: adminPin, p_cap: parseInt($("cCap").value) || 20000});
     if(cfg && cfg.rebate_pct != null) await rpc("admin_set_rebate", {p_pin: adminPin, p_pct: Math.max(0, Math.min(100, parseInt($("cRebate").value) || 0))});
@@ -1841,8 +1871,8 @@ function render(){
   if(cfg){
     const h=$("hours"); h.hidden=false;
     if(!cfg.open){ h.className="hours closed"; $("hoursMain").textContent="Casino closed"; $("hoursSub").textContent="The commish has paused betting."; }
-    else if(cfg.blackout){ h.className="hours closed"; $("hoursMain").textContent="Closed for MNF and waivers"; $("hoursSub").textContent="Reopens Wednesday 3 AM ET"; }
-    else { h.className="hours open"; $("hoursMain").textContent="Open"; $("hoursSub").textContent="Closes Monday 8 PM ET for MNF and waivers · $10 min bet"; }
+    else if(cfg.blackout){ h.className="hours closed"; $("hoursMain").textContent="Closed for waivers"; $("hoursSub").textContent="Reopens Wednesday 3 AM ET"; }
+    else { h.className="hours open"; $("hoursMain").textContent="Open"; $("hoursSub").textContent="Closes when Monday Night Football ends, for waivers · $10 min bet"; }
   }
 
   const me = myTeam();
@@ -1884,6 +1914,48 @@ function render(){
     return `<li><span><b>${esc(e.name)}</b> · ${GAME_NAMES[e.game]||e.game}${e.game==="rebate"||e.game==="spin"?"":" · bet "+fmt(e.bet)}</span><span class="num ${p>0?"pos":p<0?"neg":""}">${p?sfmt(p):"push"}</span><span class="d">${esc(e.detail||"")} · ${ago(e.created_at)}</span></li>`; }).join("")
     : `<li class="empty">No bets in the last 24 hours.</li>`;
 }
+
+/* ---------- primetime drops ---------- */
+var drops = [], primeLive = [], dropMine = null, dropKnown = null, dropBusy = new Set();
+function dropsSeen(list){
+  // a brand-new drop: buzz the phone and flash the tab title
+  const ids = new Set((list || []).map(d => d.id));
+  if(dropKnown){ const fresh = (list || []).filter(d => !dropKnown.has(d.id) && new Date(d.expires_at) > Date.now());
+    if(fresh.length){ const d = fresh[0]; toast((d.kind === "td" ? "Touchdown" : "Field goal") + "! Grab your free " + fmt(d.amount) + ".");
+      try { navigator.vibrate && navigator.vibrate([120, 60, 120]); } catch(e){}
+      if(auth) loadDropMine(); } }
+  dropKnown = ids;
+}
+async function loadDropMine(){ if(!auth){ dropMine = null; return; } try { dropMine = await rpc("drop_state", creds()); } catch(e){ dropMine = null; } renderDrops(); }
+function renderDrops(){
+  const z = $("dropZone"); if(!z) return;
+  const now = Date.now(), got = new Set(dropMine?.claimed || []);
+  const open = (drops || []).filter(d => new Date(d.expires_at) > now);
+  let html = "";
+  (primeLive || []).forEach(g => {
+    const night = ({1:"MNF",4:"TNF",7:"SNF"})[new Date(new Date(g.kickoff).toLocaleString("en-US",{timeZone:"America/New_York"})).getDay() || 7] || "Primetime";
+    const sc = g.state === "pre" ? "kicks off soon" : `${esc(g.away)} ${g.away_score ?? 0} · ${esc(g.home)} ${g.home_score ?? 0}`;
+    html += `<div class="primebar"><span class="live">${night} drops live</span><span class="sc">${sc}</span><span class="pay">Every TD drops ${fmt(cfg?.drop_td ?? 150)}, every FG ${fmt(cfg?.drop_fg ?? 30)}${dropMine?.week ? " · you've grabbed " + fmt(dropMine.week) + " this week" : ""}</span></div>`;
+  });
+  open.forEach(d => {
+    const mine = got.has(d.id), left = Math.max(0, (new Date(d.expires_at) - now) / 1000), m = Math.floor(left / 60), sec = Math.floor(left % 60);
+    const head = d.team + (d.kind === "td" ? " touchdown" : " field goal"), score = d.label.split(" · ")[1];
+    html += `<button class="dropbar ${d.kind}${mine ? " got" : ""}" data-drop="${d.id}" ${mine || !auth ? "disabled" : ""}>
+      <span class="ball" aria-hidden="true">${d.kind === "td" ? "🏈" : "🥅"}</span>
+      <span><b>${esc(head)}</b><small>${esc(score || "")} · ${m}:${String(sec).padStart(2, "0")} left · ${d.claims} grabbed</small></span>
+      <span class="sgo">${mine ? "Got it" : !auth ? "Log in" : "Grab " + fmt(d.amount)}</span></button>`;
+  });
+  z.innerHTML = html;
+}
+$("dropZone").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-drop]"); if(!b || !auth) return;
+  const id = +b.dataset.drop; if(dropBusy.has(id)) return; dropBusy.add(id);
+  try { const r = await rpc("drop_claim", {...creds(), p_drop: id}); dropMine = r.state; balance = r.state.balance;
+    toast("+" + fmt(r.amount) + " free FAAB"); render(); renderDrops(); refresh(); }
+  catch(err){ toast(err.message); loadDropMine(); }
+  finally { dropBusy.delete(id); }
+});
+setInterval(() => { if(!document.hidden && (drops || []).some(d => new Date(d.expires_at) > Date.now())) renderDrops(); }, 1000);
 
 /* ---------- daily free spin ---------- */
 const SPIN_SLICES = [20,50,30,100,40,75,20,2000,30,50,40,100,20,75,30,8000];
@@ -1942,7 +2014,7 @@ $("spinGo").addEventListener("click", async () => {
 });
 setInterval(() => { if(!document.hidden) renderSpin(); }, 30000);
 
-refresh().then(loadBj).then(loadSpin);
+refresh().then(loadBj).then(loadSpin).then(loadDropMine);
 setInterval(() => { if(!document.hidden) refresh(); }, 6000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden) refresh(); });
 })();
