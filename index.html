@@ -338,6 +338,28 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
 .picker button.sel{border-color:var(--amber)}
 #cSteps{display:flex;flex-direction:column;gap:6px;margin:4px 0 10px}
 #cSteps p{margin:0}
+.spinbar{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:linear-gradient(90deg,#3a2a06,#1b2440 60%);border:1px solid #6b5216;border-radius:8px;padding:10px 14px;margin-bottom:10px}
+.spinbar b{display:block;font-family:var(--display);text-transform:uppercase;font-size:19px;letter-spacing:.03em;color:var(--amber)}
+.spinbar small{color:var(--muted);font-size:13px}
+.spinbar .sgo{margin-left:auto;background:var(--amber);color:#1a1205;font-weight:700;padding:7px 14px;border-radius:6px}
+.spinbar.used{background:var(--surface);border-color:var(--line)}
+.spinbar.used b{color:var(--fg)}
+.spinbar.used .sgo{background:var(--surface-2);color:var(--muted)}
+.spinico{width:30px;height:30px;border-radius:50%;flex:none;background:conic-gradient(var(--amber) 0 45deg,#c4313b 0 90deg,var(--turf) 0 135deg,#26324c 0 180deg,var(--amber) 0 225deg,#c4313b 0 270deg,var(--turf) 0 315deg,#26324c 0)}
+@media (prefers-reduced-motion:no-preference){.spinbar:not(.used) .spinico{animation:spinico 6s linear infinite}}
+@keyframes spinico{to{transform:rotate(360deg)}}
+.spinmodal{position:fixed;inset:0;background:rgba(3,6,14,.78);z-index:30;display:grid;place-items:center;padding:16px;overflow:auto}
+.spinbox{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;width:min(100%,420px);display:flex;flex-direction:column;gap:12px;text-align:center}
+.spinbox h2{font-size:28px}
+.spinx{position:absolute;right:8px;top:6px;background:none;border:0;font-size:28px;color:var(--muted);padding:4px 10px}
+.wheelwrap{position:relative;width:min(100%,300px);margin:0 auto}
+.wheelwrap canvas{width:100%;display:block;border-radius:50%}
+.wheelptr{position:absolute;left:50%;top:-6px;transform:translateX(-50%);width:0;height:0;border-left:14px solid transparent;border-right:14px solid transparent;border-top:26px solid var(--fg);z-index:2;filter:drop-shadow(0 2px 3px #000)}
+.spinodds{text-align:left}
+.spinodds summary{cursor:pointer;color:var(--muted);font-size:14px}
+.spinodds .row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;padding:3px 0;border-bottom:1px solid var(--line)}
+#spinBig{text-align:left;font-size:13px;color:var(--muted)}
+#spinBig b{color:var(--amber)}
 .toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--surface-2);border:1px solid var(--line);padding:10px 14px;border-radius:6px;font-size:14px;max-width:min(92vw,460px);z-index:20}
 @media (prefers-reduced-motion:reduce){.card{animation:none}.track .mark{transition:none}}
 </style>
@@ -378,6 +400,7 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
   </section>
 
   <section id="gameSec" hidden>
+    <button class="spinbar" id="spinBar" hidden><span class="spinico" aria-hidden="true"></span><span><b id="spinBarT">Free daily spin</b><small id="spinBarS"></small></span><span class="sgo" id="spinBarGo">Spin</span></button>
     <nav class="sections" aria-label="Sections">
       <button data-sec="casino" aria-pressed="true"><b>Casino</b><small>8 games</small></button>
       <button data-sec="sportsbook" aria-pressed="false"><b>Sportsbook</b><small>NFL lines &amp; parlays</small></button>
@@ -697,6 +720,18 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
   </details>
 </div>
 <div class="toast" id="toast" hidden></div>
+<div class="spinmodal" id="spinModal" hidden role="dialog" aria-modal="true" aria-labelledby="spinTitle">
+  <div class="spinbox">
+    <button class="spinx" id="spinClose" aria-label="Close">×</button>
+    <h2 id="spinTitle">Daily free spin</h2>
+    <p class="small">One free spin a day, on the house. Resets at midnight Eastern.</p>
+    <div class="wheelwrap"><div class="wheelptr" aria-hidden="true"></div><canvas id="spinWheel" width="560" height="560"></canvas></div>
+    <div class="result" id="spinRes" aria-live="polite"></div>
+    <button class="go" id="spinGo">Spin</button>
+    <p class="small" id="spinOddsLine"></p><details class="spinodds"><summary>All odds</summary><p class="small">The slices aren't drawn to scale. These are the actual odds on every spin.</p><div id="spinOdds"></div></details>
+    <div id="spinBig"></div>
+  </div>
+</div>
 
 <script>
 (() => {
@@ -709,7 +744,7 @@ const sfmt = n => (n > 0 ? "+" : "") + fmt(n);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const reduced = () => matchMedia("(prefers-reduced-motion:reduce)").matches;
 let toastT; function toast(msg){ const t=$("toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true,3600); }
-const GAME_NAMES = {roulette:"Roulette",blackjack:"Blackjack",slots:"Slots",dice:"Dice",plinko:"Plinko",craps:"Craps",sportsbook:"Sportsbook",parlay:"Parlay",weather:"Weather",rocket:"Rocket",chicken:"Chicken",rebate:"Loss rebate"};
+const GAME_NAMES = {spin:"Free spin",roulette:"Roulette",blackjack:"Blackjack",slots:"Slots",dice:"Dice",plinko:"Plinko",craps:"Craps",sportsbook:"Sportsbook",parlay:"Parlay",weather:"Weather",rocket:"Rocket",chicken:"Chicken",rebate:"Loss rebate"};
 
 /* ---------- server ---------- */
 const H = {apikey: SUPABASE_KEY, "Content-Type": "application/json"};
@@ -781,10 +816,10 @@ $("pinForm").addEventListener("submit", async e => {
     auth = {team: pickTeam.id, pin}; balance = r.balance;
     try { localStorage.setItem("delts-auth", JSON.stringify(auth)); } catch(e){}
     $("pinForm").hidden = true; pickTeam = null;
-    await refresh(); loadBj();
+    await refresh(); loadBj(); loadSpin();
   } catch(err){ toast(err.message); }
 });
-$("logout").addEventListener("click", () => { auth = null; balance = null; try{ localStorage.removeItem("delts-auth"); }catch(e){} render(); });
+$("logout").addEventListener("click", () => { auth = null; balance = null; try{ localStorage.removeItem("delts-auth"); }catch(e){} render(); loadSpin(); });
 
 /* ---------- bet controls ---------- */
 const betVals = {roulette:100, blackjack:100, slots:50, dice:100, plinko:50, craps:100, sportsbook:100, markets:100, rocket:50, chicken:50};
@@ -1843,14 +1878,71 @@ function render(){
       <td class="r num ${t.net>0?"pos":t.net<0?"neg":""}">${t.net?sfmt(t.net):"—"}</td><td class="r num">${fmt(t.available)}</td></tr>`).join("");
   }
   const now = Date.now(); const ago = s => { const d=(now-new Date(s).getTime())/1000; return d<60?"just now":d<3600?Math.floor(d/60)+"m ago":d<86400?Math.floor(d/3600)+"h ago":Math.floor(d/86400)+"d ago"; };
-  { const n = feed.length, w = feed.reduce((x,e) => x + (e.game === "rebate" ? 0 : e.bet), 0);
+  { const n = feed.filter(e => e.game !== "spin" && e.game !== "rebate").length, w = feed.reduce((x,e) => x + (e.game === "rebate" ? 0 : e.bet), 0);
     $("feedCount").textContent = n ? `Last 24 hours · ${n} ${n === 1 ? "bet" : "bets"} · ${fmt(w)} wagered` : "Last 24 hours"; }
   $("feed").innerHTML = feed.length ? feed.map(e => { const p = e.payout - e.bet;
-    return `<li><span><b>${esc(e.name)}</b> · ${GAME_NAMES[e.game]||e.game}${e.game==="rebate"?"":" · bet "+fmt(e.bet)}</span><span class="num ${p>0?"pos":p<0?"neg":""}">${p?sfmt(p):"push"}</span><span class="d">${esc(e.detail||"")} · ${ago(e.created_at)}</span></li>`; }).join("")
+    return `<li><span><b>${esc(e.name)}</b> · ${GAME_NAMES[e.game]||e.game}${e.game==="rebate"||e.game==="spin"?"":" · bet "+fmt(e.bet)}</span><span class="num ${p>0?"pos":p<0?"neg":""}">${p?sfmt(p):"push"}</span><span class="d">${esc(e.detail||"")} · ${ago(e.created_at)}</span></li>`; }).join("")
     : `<li class="empty">No bets in the last 24 hours.</li>`;
 }
 
-refresh().then(loadBj);
+/* ---------- daily free spin ---------- */
+const SPIN_SLICES = [20,50,30,100,40,75,20,2000,30,50,40,100,20,75,30,8000];
+let spin = null, spinRot = 0, spinBusy = false;
+function spinColor(v, i){ return v === 8000 ? "#ffb22e" : v === 2000 ? "#2c9d66" : i % 2 ? "#26324c" : "#c4313b"; }
+function drawSpinWheel(){
+  const cv = $("spinWheel"), x = cv.getContext("2d"), W = cv.width, R = W / 2, n = SPIN_SLICES.length, seg = 2 * Math.PI / n;
+  x.clearRect(0, 0, W, W);
+  SPIN_SLICES.forEach((v, i) => {
+    const a0 = -Math.PI / 2 + i * seg;
+    x.beginPath(); x.moveTo(R, R); x.arc(R, R, R - 6, a0, a0 + seg); x.closePath(); x.fillStyle = spinColor(v, i); x.fill();
+    x.strokeStyle = "#0a1120"; x.lineWidth = 3; x.stroke();
+    x.save(); x.translate(R, R); x.rotate(a0 + seg / 2);
+    x.fillStyle = v === 8000 ? "#1a1205" : "#f6f3ea"; x.font = `800 ${v >= 2000 ? 34 : 30}px 'Big Shoulders Display', sans-serif`; x.textAlign = "right"; x.textBaseline = "middle";
+    x.fillText("$" + v.toLocaleString("en-US"), R - 22, 0); x.restore();
+  });
+  x.beginPath(); x.arc(R, R, R - 4, 0, 2 * Math.PI); x.strokeStyle = "#ffb22e"; x.lineWidth = 6; x.stroke();
+  x.beginPath(); x.arc(R, R, 34, 0, 2 * Math.PI); x.fillStyle = "#0a1120"; x.fill(); x.strokeStyle = "#ffb22e"; x.lineWidth = 4; x.stroke();
+  x.fillStyle = "#ffb22e"; x.font = "900 34px 'Big Shoulders Display', sans-serif"; x.textAlign = "center"; x.textBaseline = "middle"; x.fillText("$", R, R + 2);
+}
+function spinUntil(){ if(!spin?.nextAt) return ""; const d = Math.max(0, new Date(spin.nextAt) - Date.now()) / 1000, h = Math.floor(d / 3600), m = Math.floor(d % 3600 / 60); return h ? `${h}h ${m}m` : `${m}m`; }
+function renderSpin(){
+  const bar = $("spinBar"); bar.hidden = !auth || !spin;
+  if(!spin) return;
+  bar.classList.toggle("used", !spin.ready);
+  $("spinBarT").textContent = spin.ready ? "Free daily spin ready" : "You won " + fmt(spin.today) + " today";
+  $("spinBarS").textContent = spin.ready ? "On the house. Mostly $20 to $100, with a shot at $8,000." : "Next free spin in " + spinUntil();
+  $("spinBarGo").textContent = spin.ready ? "Spin" : "View";
+  if(!spinBusy){ $("spinGo").disabled = !spin.ready; $("spinGo").textContent = spin.ready ? "Spin" : "Next spin in " + spinUntil(); }
+  { const big = (spin.prizes || []).filter(p => p.amount >= 1000 && p.pct > 0);
+    $("spinOddsLine").textContent = big.length ? "The wheel isn't to scale. " + big.map(p => fmt(p.amount) + " hits 1 in " + Math.round(100 / p.pct).toLocaleString("en-US")).join(", ") + "." : ""; }
+  $("spinOdds").innerHTML = (spin.prizes || []).map(p => `<div class="row"><span>${fmt(p.amount)}</span><span>${p.pct >= 1 ? p.pct.toFixed(1) : p.pct}%${p.pct < 1 ? " · 1 in " + Math.round(100 / p.pct).toLocaleString("en-US") : ""}</span></div>`).join("");
+  $("spinBig").innerHTML = (spin.big || []).length ? "Recent big hits: " + spin.big.map(b => `<b>${esc(b.name)}</b> ${fmt(b.amount)}`).join(" · ") : "";
+}
+async function loadSpin(){ if(!auth){ spin = null; renderSpin(); return; } try { spin = await rpc("spin_state", creds()); } catch(e){ spin = null; } renderSpin(); }
+function openSpin(){ $("spinModal").hidden = false; drawSpinWheel(); if(!spinBusy){ $("spinRes").className = "result"; $("spinRes").textContent = spin && !spin.ready ? "Today's spin: " + fmt(spin.today) : ""; } $("spinGo").focus(); }
+function closeSpin(){ if(spinBusy) return; $("spinModal").hidden = true; }
+$("spinBar").addEventListener("click", openSpin);
+$("spinClose").addEventListener("click", closeSpin);
+$("spinModal").addEventListener("click", e => { if(e.target.id === "spinModal") closeSpin(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("spinModal").hidden) closeSpin(); });
+$("spinGo").addEventListener("click", async () => {
+  if(spinBusy || !spin?.ready) return; spinBusy = true; $("spinGo").disabled = true; $("spinRes").className = "result"; $("spinRes").textContent = "";
+  let r; try { r = await rpc("spin_play", creds()); } catch(e){ spinBusy = false; toast(e.message); loadSpin(); return; }
+  const hits = SPIN_SLICES.map((v, i) => v === r.amount ? i : -1).filter(i => i >= 0), i = hits[Math.floor(Math.random() * hits.length)] ?? 0;
+  const seg = 360 / SPIN_SLICES.length, jitter = (Math.random() - 0.5) * seg * 0.6;
+  const target = 360 - (i + 0.5) * seg + jitter;
+  spinRot = spinRot - (spinRot % 360) + 360 * 6 + target;
+  const cv = $("spinWheel"), dur = reduced() ? 300 : 4800;
+  cv.style.transition = `transform ${dur}ms cubic-bezier(.12,.7,.12,1)`; cv.style.transform = `rotate(${spinRot}deg)`;
+  setTimeout(() => {
+    spinBusy = false; spin = r.state; balance = r.state.balance; renderSpin(); render();
+    $("spinRes").className = "result win"; $("spinRes").textContent = (r.amount >= 2000 ? "JACKPOT! " : "") + "You won " + fmt(r.amount) + " in free FAAB.";
+    refresh();
+  }, dur + 100);
+});
+setInterval(() => { if(!document.hidden) renderSpin(); }, 30000);
+
+refresh().then(loadBj).then(loadSpin);
 setInterval(() => { if(!document.hidden) refresh(); }, 6000);
 document.addEventListener("visibilitychange", () => { if(!document.hidden) refresh(); });
 })();
