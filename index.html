@@ -360,6 +360,21 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
 .dropbar.got .sgo{background:var(--surface-2);color:var(--muted)}
 @media (prefers-reduced-motion:no-preference){.dropbar:not(.got){animation:droppulse 1.6s ease-in-out infinite}}
 @keyframes droppulse{50%{box-shadow:0 0 0 4px rgba(255,178,46,.25)}}
+.bjwrap{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:12px;align-items:stretch}
+.bjwrap > .table{order:1;margin:0}
+.booth{order:2;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;background:linear-gradient(180deg,#1b2440,#121a2d);border:2px solid #9c7a2c;border-radius:10px;padding:0 12px 12px;overflow:hidden}
+.boothsign{align-self:stretch;margin:0 -12px;background:repeating-linear-gradient(90deg,#c4313b 0 14px,#a8262f 14px 28px);color:#fff;font-family:var(--display);font-weight:900;text-transform:uppercase;letter-spacing:.06em;font-size:18px;padding:7px 8px;text-shadow:0 1px 0 #5c1218}
+.boothface svg{width:96px;height:96px;display:block;border-radius:50%;background:#18233a;border:3px solid var(--turf)}
+.booth .lindabubble{flex:none;align-self:stretch;text-align:left}
+.booth .lindabubble::before{left:50%;top:-7px;transform:translateX(-50%) rotate(135deg)}
+.boothstats{display:flex;flex-direction:column;gap:2px;font-size:13px;font-family:var(--mono)}
+.boothfoot{margin-top:auto;font-size:11px;color:var(--muted);font-style:italic}
+@media (max-width:640px){.bjwrap{grid-template-columns:1fr}
+  .booth{order:0;display:grid;grid-template-columns:64px 1fr;grid-template-areas:"sign sign" "face bubble" "stats stats";gap:8px 10px;text-align:left;align-items:center}
+  .boothsign{grid-area:sign;font-size:16px;padding:5px 8px;text-align:center}.boothface{grid-area:face}.booth .lindabubble{grid-area:bubble}
+  .booth .lindabubble::before{left:-7px;top:16px;transform:rotate(45deg)}
+  .boothstats{grid-area:stats;flex-direction:row;gap:8px;flex-wrap:wrap}.boothstats br{display:none}#boothStats span{margin-left:8px}.boothfoot{display:none}
+  .boothface svg{width:64px;height:64px}}
 .linda{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px}
 .lindaface{width:54px;height:54px;flex:none;border-radius:50%;background:#18233a;border:2px solid var(--turf)}
 .lindabubble{position:relative;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:14px;flex:1}
@@ -480,22 +495,28 @@ details.commish summary{cursor:pointer;font-family:var(--display);font-size:20px
 
     <!-- BLACKJACK -->
     <div class="stage" data-game="blackjack" hidden>
-      <div class="linda" aria-live="polite">
-        <svg class="lindaface" viewBox="0 0 64 64" aria-hidden="true">
-          <circle cx="32" cy="22" r="13" fill="#b9792e"/><circle cx="32" cy="10" r="7" fill="#b9792e"/>
-          <ellipse cx="32" cy="32" rx="14" ry="16" fill="#f1c9a5"/>
-          <path d="M18 28c2-11 26-11 28 0-5-6-23-6-28 0z" fill="#b9792e"/>
-          <path d="M14 26h36l-3-5H17z" fill="#2c9d66"/>
-          <circle cx="26" cy="32" r="2" fill="#1a2132"/><circle cx="38" cy="32" r="2" fill="#1a2132"/>
-          <path d="M22 28l7 1M42 28l-7 1" stroke="#7a4b22" stroke-width="1.6" stroke-linecap="round"/>
-          <path d="M26 41q6-4 12 0" stroke="#a3413c" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <div class="bjwrap">
+      <aside class="booth" aria-label="The Addison Dealer">
+        <div class="boothsign">The Addison Dealer</div>
+        <div class="boothface"><svg class="lindaface" viewBox="5 7 54 55" aria-hidden="true">
+          <path d="M14 34c-1-16 8-24 18-24s19 8 18 24v10H14z" fill="#16110f"/>
+          <ellipse cx="32" cy="33" rx="13" ry="15" fill="#e8c09a"/>
+          <path d="M18 31c1-10 7-15 14-15s13 5 14 15c-4-5-8-7-14-7-5 0-10 2-14 7z" fill="#16110f"/>
+          <path d="M19 26c4-3 9-4 13-4" stroke="#2a211d" stroke-width="1.2" fill="none"/>
+          <path d="M14 23h36l-3-5H17z" fill="#2c9d66"/>
+          <circle cx="26.5" cy="33" r="1.9" fill="#1a1412"/><circle cx="37.5" cy="33" r="1.9" fill="#1a1412"/>
+          <path d="M22.5 30l6-1.1M41.5 30l-6-1.1" stroke="#16110f" stroke-width="1.6" stroke-linecap="round"/>
+          <path d="M27.5 41.5q4.5 2.6 9 0" stroke="#b5544d" stroke-width="2" fill="none" stroke-linecap="round"/>
           <path d="M14 62c2-10 9-14 18-14s16 4 18 14z" fill="#1a2132"/><path d="M28 48l4 6 4-6" fill="#f6f3ea"/><path d="M30 53h4l-2 5z" fill="#c4313b"/>
-        </svg>
+        </svg></div>
         <div class="lindabubble"><b>Dealer Linda</b><span id="lindaSays">So sorry, Addison.</span></div>
-      </div>
+        <div class="boothstats"><span class="label">Addison, last 24 hours</span><span id="boothStats">No hands yet. Linda is waiting.</span></div>
+        <div class="boothfoot">Dealing condolences since 2026</div>
+      </aside>
       <div class="table">
         <div class="hand"><span class="label">Dealer <span id="dTot"></span></span><div class="cards" id="dCards"></div></div>
         <div class="hands" id="pHands"></div>
+      </div>
       </div>
       <div class="betrow" data-bet="blackjack"></div>
       <div class="betrow" id="bjActs" hidden>
@@ -1942,6 +1963,7 @@ function render(){
   const now = Date.now(); const ago = s => { const d=(now-new Date(s).getTime())/1000; return d<60?"just now":d<3600?Math.floor(d/60)+"m ago":d<86400?Math.floor(d/3600)+"h ago":Math.floor(d/86400)+"d ago"; };
   { const n = feed.filter(e => e.game !== "spin" && e.game !== "rebate").length, w = feed.reduce((x,e) => x + (e.game === "rebate" ? 0 : e.bet), 0);
     $("feedCount").textContent = n ? `Last 24 hours · ${n} ${n === 1 ? "bet" : "bets"} · ${fmt(w)} wagered` : "Last 24 hours"; }
+  boothUpdate();
   $("feed").innerHTML = feed.length ? feed.map(e => { const p = e.payout - e.bet;
     return `<li><span><b>${esc(e.name)}</b> · ${GAME_NAMES[e.game]||e.game}${e.game==="rebate"||e.game==="spin"?"":" · bet "+fmt(e.bet)}</span><span class="num ${p>0?"pos":p<0?"neg":""}">${p?sfmt(p):"push"}</span><span class="d">${esc(e.detail||"")}${e.game === "blackjack" && e.name === ADDISON && p < 0 ? " · Dealer Linda is so sorry" : ""} · ${ago(e.created_at)}</span></li>`; }).join("")
     : `<li class="empty">No bets in the last 24 hours.</li>`;
@@ -1964,6 +1986,13 @@ const LINDA_ADDISON_WIN = ["Addison won one! Somebody screenshot it.", "Well loo
 const LINDA_OTHER_WIN = ["Nice hand. Addison could never.", "Winner! I'll let Addison know.", "That's how it's done. Taking notes, Addison?"];
 const LINDA_OTHER_LOSS = ["Happens to everybody. Mostly Addison.", "So sorry. Not Addison-level sorry, but sorry.", "Shake it off. At least you're not Addison."];
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
+function boothUpdate(){
+  const el = $("boothStats"); if(!el) return;
+  const h = (feed || []).filter(e => e.game === "blackjack" && e.name === ADDISON);
+  if(!h.length){ el.textContent = "No hands yet. Linda is waiting."; return; }
+  const net = h.reduce((a, e) => a + e.payout - e.bet, 0), lost = h.filter(e => e.payout < e.bet).length;
+  el.innerHTML = `${h.length} ${h.length === 1 ? "hand" : "hands"} · ${lost} lost<br><span class="${net < 0 ? "neg" : net > 0 ? "pos" : ""}">${net ? sfmt(net) : "even"}</span>`;
+}
 function lindaSay(t){ const el = $("lindaSays"); if(!el) return; el.textContent = t; const b = el.parentElement; b.classList.remove("new"); void b.offsetWidth; b.classList.add("new"); }
 function lindaReact(delta){
   const me = myTeam()?.name === ADDISON;
