@@ -1972,19 +1972,52 @@ function render(){
 /* ---------- Dealer Linda (a bit for Addison; purely cosmetic, the cards are untouched) ---------- */
 var ADDISON = "Death by Hamstrings";
 const LINDA_IDLE = [
-  "So sorry, Addison.",
   "I've dealt 678 hands this season. Addison thinks he played 435 of them.",
-  "Fun fact: the deck doesn't know who Addison is. I do, though.",
-  "Addison asked me to shuffle better. I told him I'm a random number generator, sweetie.",
-  "Thinking of Addison today. And every day, really.",
-  "Hit on 12? Stand on 16? Addison says yes to both.",
-  "Ask me how many blackjacks Addison's had. Actually, don't.",
-  "Somebody check on Addison.",
+  "Addison's betting like Caleb Williams reads a defense. Eyes closed, holding it too long, sacked anyway.",
+  "Addison talks about Conor's betting a lot for a guy getting out-gambled by Conor.",
+  "Josh Allen has more playoff wins than Addison has winning sessions. And Addison hates that.",
+  "Addison calls the deck rigged the way Bears fans call Caleb elite. Loudly, and with zero evidence.",
+  "Every time Addison hits on 16, Josh Allen gets a little stronger.",
+  "Addison wanted a recount on blackjack. Bro, it's math, not a Bears coaching search.",
+  "Conor's down bad and even Conor is like 'damn, Addison.'",
+  "Addison bets like Caleb throws in the fourth quarter: too late and to the other team.",
+  "Josh Allen just threw for 300 and ran for two. Addison just split tens.",
+  "Addison's bankroll and the Bears' playoff hopes. Name a more tragic duo. I'll wait.",
+  "Addison's favorite stat is Conor's losses. Coincidentally, it's also the only one he can read.",
+  "Fun fact: the deck doesn't know who Addison is. I do, unfortunately.",
+  "Addison asked me to shuffle better. I'm a random number generator, sweetie. You're just bad.",
+  "Addison, the Caleb Williams of FAAB: tons of hype, tons of sacks.",
+  "Somebody check on Addison. Gently. He's been through enough this season.",
 ];
-const LINDA_ADDISON_LOSS = ["So sorry, Addison.", "Oof. Addison, I'm so sorry.", "Addison, honey. I'm so, so sorry.", "That one hurt me too, Addison. Not as much as you, but still.", "Want me to call someone for you, Addison?"];
-const LINDA_ADDISON_WIN = ["Addison won one! Somebody screenshot it.", "Well look at that, Addison. Don't tell the group chat it's rigged in your favor now.", "Mark the calendar. Addison won a hand."];
-const LINDA_OTHER_WIN = ["Nice hand. Addison could never.", "Winner! I'll let Addison know.", "That's how it's done. Taking notes, Addison?"];
-const LINDA_OTHER_LOSS = ["Happens to everybody. Mostly Addison.", "So sorry. Not Addison-level sorry, but sorry.", "Shake it off. At least you're not Addison."];
+const LINDA_ADDISON_LOSS = [
+  "So sorry, Addison. Want me to call Caleb? He knows a lot about getting crushed.",
+  "Oof. That one's going in the Josh Allen highlight reel of your losses.",
+  "Addison, honey. Even Conor wouldn't have played it like that.",
+  "Another one? Bears offensive line is protecting your bankroll, I see.",
+  "That hand was rigged. By your decisions.",
+  "I'd say better luck next time, but we both know that's not how this works for you.",
+  "Addison, the deck isn't rigged. You're just the Caleb Williams of blackjack: highly drafted, sacked every hand.",
+  "Pour one out for Addison's FAAB. Josh Allen's already pouring champagne.",
+  "Don't worry, Addison. Conor's still worse. Probably. Maybe. Check the stats.",
+];
+const LINDA_ADDISON_WIN = [
+  "Addison won one! Bills fans, cover your ears, he's gonna be insufferable.",
+  "Mark the calendar. Addison won a hand. Caleb completed a pass in rhythm. Miracles everywhere.",
+  "Well look at that. Don't tell the group chat it's rigged in your favor now, Addison.",
+  "A win! Don't spend it all on Bears playoff tickets, they won't need them.",
+];
+const LINDA_OTHER_WIN = [
+  "Nice hand. Addison could never.",
+  "Winner! Somebody screenshot it and send it to Addison.",
+  "That's how it's done. Taking notes, Addison? Conor, you too.",
+  "Clean. Josh Allen-level clean. Addison hates this.",
+];
+const LINDA_OTHER_LOSS = [
+  "Happens to everybody. Mostly Addison.",
+  "So sorry. Not Addison-level sorry, but sorry.",
+  "Shake it off. At least you're not Addison. Or Conor.",
+  "Rough. That was a Caleb Williams third-and-long special.",
+];
 const pickLine = a => a[Math.floor(Math.random() * a.length)];
 function boothUpdate(){
   const el = $("boothStats"); if(!el) return;
