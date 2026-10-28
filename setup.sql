@@ -556,12 +556,12 @@ language plpgsql security definer set search_path = public as $$
 declare r record; pct int; paid int := 0;
 begin
   if not _admin(p_pin) then return json_build_object('error', 'Wrong commish PIN'); end if;
-  -- only after the Wednesday 3 AM ET waiver run that follows the settle
-  if exists (select 1 from pending_rebates p,
-               lateral (select date_trunc('week', p.created_at at time zone 'America/New_York') + interval '2 days 3 hours' as tue) w
-             where (case when w.tue > (p.created_at at time zone 'America/New_York') then w.tue else w.tue + interval '7 days' end)
-                   at time zone 'America/New_York' > now()) then
+  -- not while the casino is closed for waivers (end of MNF until 3 AM Wednesday ET); any other time is fine
+  if _blackout() then
     raise exception 'Rebates pay out after waivers clear at 3 AM Wednesday.';
+  end if;
+  if not exists (select 1 from pending_rebates) then
+    raise exception 'No rebates are owed. Press Mark settled first, then pay.';
   end if;
   select rebate_pct into pct from config where id = 1;
   for r in select team_id, sum(amount)::int amt from pending_rebates group by team_id loop
